@@ -1,6 +1,8 @@
 2013-5-12 version 1
 Basic module structure and interface definition, focusing on server / client protocol. Socket API is not defined. No error handling or network ACK is considered.
 
+2013-5-14 version 2 (submitted for leeeastwood)
+Minor revision on command protocol.
 
 SYSTEM MODULE
 
@@ -22,8 +24,10 @@ creates Sensor Network Infrastructure
 handles XBee radio communication
 
 
-Note: 
+Note: 
 Right now the model supports "Star" network topology for the XBee sensor network. The server application communicates with the network coordinator (local radio), and then the XBee control will communicate with end points (network router, in the prototype environment).
+The Xbee modules we use can support mech network topology. But I think your design is enough. The server can ignore the details on how to build a network.
+
 
 Ideally, the application is configurable by ini files, to set up the following arguments:
 - number of endpoints
@@ -45,6 +49,8 @@ Send data to destination XBee radio
 3. Command Logic
 retrieves command from Socket Server Module
 parses command and issue command to XBee Control Module
+
+Consider that: At most of time, we receive a full command packet from a socket connection. But sometimes we will get an uncompleted packet. Please check the correctness of a command here.
 
 Feature / Interface
 
@@ -70,6 +76,7 @@ Recv()
 
 2. Command Logic
 assembles command according to COMMAND PROTOCOL (see below)
+Now we can not program the wireless switch we bought. We only send the fix commands to it.  However I plan to 
 
 Feature / Interface
 
@@ -89,38 +96,39 @@ Commands in Details:
 
 1. SetSingleSwitch=0xC1;
 Sets single switch state
-Param 1: SwitchIndex (2 bytes) up to 65535 switches
+Param 1: SwitchIndex (2 bytes) up to 65535 switches
 Param 2: SwitchStatus (1 byte)
 Total (4 bytes)
+Server returns Success or Fail (1 bit)
+
 
 2. GetSingleSwitch=0xC2
 Gets single switch state
-Param 1: SwitchIndex (2 bytes) up to 65535 switches
+Param 1: SwitchIndex (2 bytes) up to 65535 switches
 Total (3 bytes)
 server returns SwitchStatus (1 byte)
 
 3. SetMultipleSwitches=0xC3
-Sets state for multiple switches (up to 16, starting at SwitchIndex) at once
-Param 1: SwitchIndex
-Param 2: SwitchBitMask (2 bytes) up to 16 switches
-Total (3 bytes)
+Sets state for multiple switches (up to 64, starting at SwitchIndex) at once
+Param 1: SwitchIndex(2 byte)
+Param 2: SwitchBitMask (8 bytes) up to 64 switches
+Total (10bytes)
+Server returns Success/ Fail state (SwitchBitMask 8byte)
 
 4. GetMultipleSwitches=0xC4
-Gets state for multiple switches (up to 16, starting at SwitchIndex) at once
+Gets state for multiple switches (up to 64, starting at SwitchIndex) at once
 Param 1: Index
 Total (2 bytes)
-server returns SwitchBitMask (2 bytes)
+server returns SwitchBitMask (8 bytes)
 
 5. GetNumSwitches=0xC5
-Gets number of switches server manages
+Gets number of switches server manages
 Total (1 byte)
 server returns number (2 bytes)
 
 6. SetSingleSwitchDelay=0xC6;
 Sets single switch state with a time delay
 Param 1: SwitchIndex (2 bytes)
-Param 2: Delay (ms) (2 bytes) up to 65535 ms = 65.5s
+Param 2: Delay (ms) (2 bytes) up to 65535 s = 18.2小时
 Total (5 bytes)
-
-
-
+server returns Success/Fail(1 bytes)
