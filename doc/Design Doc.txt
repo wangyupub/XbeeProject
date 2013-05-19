@@ -154,4 +154,7 @@ Since a command can be up to 10 bytes, while the smallest command is only 1 byte
 
 There should be a limit to the maximum size / number of commands for the Packet.
 
+From eastwood: 
+1. The server should understand a cammand when the Command Type is parsed. Then server will know the size of a command. A　more secure coding way i can figure out is to create 10 bytes buffer for each command.
+2. we should set a limit to the max number of commands. maybe 10 is enough for now. We can write a static variable in a head file like  "MULTI-COMMAND_MAX_COMMANDS_COUNT" or sth
 
