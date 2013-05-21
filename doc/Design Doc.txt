@@ -1,0 +1,160 @@
+2013-5-12 version 1
+Basic module structure and interface definition, focusing on server / client protocol. Socket API is not defined. No error handling or network ACK is considered.
+
+2013-5-14 version 2 (submitted for leeeastwood)
+Minor revision on command protocol.
+
+2013-5-15 version 3
+Respond to feedback. Adding support for Multi-Command Packet. Some clarification on multi-threading and command queue.
+
+
+SYSTEM MODULE
+
+SERVER
+
+1. Socket Server
+handles network data transfer
+The Socket Server will only accept one connection. Socket Server thread is the main thread of the server application.
+
+
+Feature / Interface
+accept()
+
+receive()
+
+send()
+
+2. XBee Control
+creates Sensor Network Infrastructure
+handles XBee radio communication
+
+
+Note: 
+Right now the model supports "Star" network topology for the XBee sensor network. The server application communicates with the network coordinator (local radio), and then the XBee control will communicate with end points (network router, in the prototype environment).
+##The Xbee modules we use can support mesh network topology. But I think your design is enough. The server can ignore the details on how to build a network.
+
+Ideally, the application is configurable by ini files, to set up the following arguments:
+- number of endpoints
+- serial number of each endpoint radio
+- number of switches each end point controls
+
+Feature / Interface
+
+Initialize()
+
+Initialize XBee Network based on ini file
+
+Destroy()
+Clean up XBee Data
+
+SendRequest(int address, int length, byte* data)
+Send data to destination XBee radio
+
+3. Command Logic
+retrieves command from Socket Server Module
+parses command and issue command to XBee Control Module
+
+##Consider that: At most of time, we receive a full command packet from a socket connection. But sometimes we will get an uncompleted packet. Please check the correctness of a command here.
+####If client is about to send a packet of multiple commands, the server Command Logic here should be able to assembe the data packets that the Socket Server module retrieves into a complete chunk of data. On the server side, this can be handeld in Command Logic. However, the client should have a "SendAll" routine, to make sure all data are sent by socket send. Protocol changes to support this is updated below.
+
+Command Logic maintains a queue of command to send. A thread will poll the (priority) queue to send the timed commands. Commands without a delay time will be send instantly. (throughput of XBee is not a problem??) 
+
+Feature / Interface
+
+ProcessCommand(unsigned short commandType, byte *params)
+
+Process command, and generates request for XBee communication
+
+UpdateRequestQueue(int timeElapsed)
+Multithread updater, to process XBee request queue
+
+
+CLIENT
+1. Socket Client
+connects to server
+
+Feature / Interface
+
+Connect(address)
+
+Send()
+
+Recv()
+
+2. Command Logic
+assembles command according to COMMAND PROTOCOL (see below)
+##Now we can not program the wireless switch we bought. We only send the fix commands to it.  However I plan to 
+####Yes, the first version (prototype) will only map the command to the fix commands. Eventually, each endpoint (router) should be programmable, maybe to control more switches. This module will still be the translating unit between the network protocol we defined here and the XBee commands we need to send through the local radio (network coordinator).
+
+Feature / Interface
+
+3. User Interface
+interacts with user
+
+Feature / Interface
+
+
+COMMAND PROTOCOL
+
+Format:
+
+CommandType | CommandParameter ...
+
+Commands in Details:
+
+1. SetSingleSwitch=0xC1;
+Sets single switch state
+Param 1: SwitchIndex (2 bytes) up to 65535 switches
+Param 2: SwitchStatus (1 byte)
+Total (4 bytes)
+Server returns Success or Fail (1 bit)
+
+
+2. GetSingleSwitch=0xC2
+Gets single switch state
+Param 1: SwitchIndex (2 bytes) up to 65535 switches
+Total (3 bytes)
+server returns SwitchStatus (1 byte)
+
+3. SetMultipleSwitches=0xC3
+Sets state for multiple switches (up to 64, starting at SwitchIndex) at once
+Param 1: SwitchIndex(2 byte)
+Param 2: SwitchBitMask (8 bytes) up to 64 switches
+Total (10 bytes)
+Server returns Success/ Fail state (SwitchBitMask 8 bytes)
+
+4. GetMultipleSwitches=0xC4
+Gets state for multiple switches (up to 64, starting at SwitchIndex) at once
+Param 1: Index
+Total (2 bytes)
+server returns SwitchBitMask (8 bytes)
+
+5. GetNumSwitches=0xC5
+Gets number of switches server manages
+Total (1 byte)
+server returns number (2 bytes)
+
+6. SetSingleSwitchDelay=0xC6;
+Sets single switch state with a time delay
+Param 1: SwitchIndex (2 bytes)
+Param 2: Delay (ms) (2 bytes) up to 65535 s = 18.2小时
+Total (5 bytes)
+server returns Success/Fail(1 bytes)
+
+Multi-Command Packet
+
+Format:
+
+0xAC (Multi-Command Header)| CommandCount | CommandType 1 | CommandParameter(s) 1 | CommandType 2| ...
+
+Note:
+Once the first two bytes are received, the server Command Logic would start populating the list of commands. It will keep parsing the data received by the Socket Control until it reaches the end of the last command. A bit tricky to handle the buffer though. Alternative way is to have the size as part of the packet buffer and let Server Socket Control handle the data ressembling.
+
+Since a command can be up to 10 bytes, while the smallest command is only 1 byte, padding all commands up to same size is not a good idea. Or we can have a constraint that in one Multi-Command Packet, only one command type is allowed.
+
+There should be a limit to the maximum size / number of commands for the Packet.
+
+From eastwood: 
+1. The server should understand a cammand when the Command Type is parsed. Then server will know the size of a command. A　more secure coding way i can figure out is to create 10 bytes buffer for each command.
+2. we should set a limit to the max number of commands. maybe 10 is enough for now. We can write a static variable in a head file like  "MULTI-COMMAND_MAX_COMMANDS_COUNT" or sth
+
