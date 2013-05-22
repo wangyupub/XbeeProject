@@ -13,10 +13,11 @@
 
 #include "zlog.h"
 
+zlog_category_t *main_zlog_category;
 
 void SSECallback(int sid, SocketServerEvent event, void* data, int data_len)
 {
-  printf("SSECallback is called %d\n", event);
+  zlog_debug(main_zlog_category, "SSECallback is called %d\n", event);
   switch (event)
   {
     case SSE_RECEIVE:
@@ -41,28 +42,27 @@ void SSECallback(int sid, SocketServerEvent event, void* data, int data_len)
 }
 
 int main(void)
-{ 
+{
+  /* Initializes zlog first.*/
   int rc;
-  zlog_category_t *c;
   rc = zlog_init("SwitchControlAppLog.conf");
   if (rc) {
     printf("init failed\n");
     return -1;
   }
-  c = zlog_get_category("MAIN");
-  if (!c) {
+  main_zlog_category = zlog_get_category("MAIN");
+  if (!main_zlog_category) {
     printf("get cat fail\n");
     zlog_fini();
     return -2;
   }
-  zlog_info(c, "hello, zlog");
-
   
   /* Initializes SocketServer */
   SocketServerConfig config;
   config.eventHandler = SSECallback;
   config.port = 3940;
-  
+
+  zlog_info(main_zlog_category, "Initializing SocketServer");
   SocketServerInit(config);
   
   
