@@ -11,6 +11,8 @@
 
 #include "SocketServerControl.h"
 
+#include "zlog.h"
+
 
 void SSECallback(int sid, SocketServerEvent event, void* data, int data_len)
 {
@@ -40,6 +42,22 @@ void SSECallback(int sid, SocketServerEvent event, void* data, int data_len)
 
 int main(void)
 { 
+  int rc;
+  zlog_category_t *c;
+  rc = zlog_init("SwitchControlAppLog.conf");
+  if (rc) {
+    printf("init failed\n");
+    return -1;
+  }
+  c = zlog_get_category("MAIN");
+  if (!c) {
+    printf("get cat fail\n");
+    zlog_fini();
+    return -2;
+  }
+  zlog_info(c, "hello, zlog");
+
+  
   /* Initializes SocketServer */
   SocketServerConfig config;
   config.eventHandler = SSECallback;
@@ -47,9 +65,14 @@ int main(void)
   
   SocketServerInit(config);
   
+  
   SocketServerStart();
   SocketServerRun();
   SocketServerStop();
   SocketServerDestroy();
+
+
+  zlog_fini();
+
   return 0;
 }
