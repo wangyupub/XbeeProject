@@ -8,17 +8,13 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
-#include "zlog.h"
-
+#include "Util.h"
 #include "SocketServerControl.h"
 
 struct addrinfo *servinfo;  /* will point to the results */
 int socketfd;
 int new_fd;
 SocketServerEventHandler gSocketServerHandler;
-
-/* zlog category */
-zlog_category_t *zlog_category;
 
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
@@ -36,14 +32,6 @@ int SocketServerInit(SocketServerConfig config)
   struct addrinfo hints;
   char port[8];
   
-  /* first thing: retrieves zlog category*/
-  zlog_category = zlog_get_category("SOCKET");
-
-  if (!zlog_category) {
-    printf("get cat fail\n");
-    return -2;
-  }
-
   memset(&hints, 0, sizeof hints); /* make sure the struct is empty */
   hints.ai_family = AF_UNSPEC;     /* don't care IPv4 or IPv6 */
   hints.ai_socktype = SOCK_STREAM; /* TCP stream sockets */
@@ -54,7 +42,7 @@ int SocketServerInit(SocketServerConfig config)
   
   if ((status = getaddrinfo(NULL, port, &hints, &servinfo)) != 0)
   {
-    zlog_fatal(zlog_category, "getaddrinfo error: %s\n", gai_strerror(status));
+    zlog_fatal(gZlogCategories[ZLOG_SOCKET], "getaddrinfo error: %s\n", gai_strerror(status));
     return 1;
   }
   else
@@ -144,7 +132,7 @@ int SocketServerRun()
     {
       SocketServerStop();
       inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr *)&their_addr), s, sizeof s);
-      zlog_info(zlog_category, "server: got connection from %s\n", s);
+      zlog_info(gZlogCategories[ZLOG_SOCKET], "server: got connection from %s\n", s);
   
       if (gSocketServerHandler != NULL)
       {

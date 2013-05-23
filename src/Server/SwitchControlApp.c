@@ -9,15 +9,14 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "Util.h"
 #include "SocketServerControl.h"
 
-#include "zlog.h"
-
-zlog_category_t *main_zlog_category;
+static AppConfig gAppConfig;
 
 void SSECallback(int sid, SocketServerEvent event, void* data, int data_len)
 {
-  zlog_debug(main_zlog_category, "SSECallback is called %d\n", event);
+  zlog_debug(gZlogCategories[ZLOG_MAIN], "SSECallback is called %d\n", event);
   switch (event)
   {
     case SSE_RECEIVE:
@@ -43,36 +42,38 @@ void SSECallback(int sid, SocketServerEvent event, void* data, int data_len)
 
 int main(void)
 {
+  int error;
+  
   /* Initializes zlog first.*/
-  int rc;
-  rc = zlog_init("SwitchControlAppLog.conf");
-  if (rc) {
-    printf("init failed\n");
-    return -1;
+  if (error = zLogInit() != 0)
+  {
+    return error;
   }
-  main_zlog_category = zlog_get_category("MAIN");
-  if (!main_zlog_category) {
-    printf("get cat fail\n");
-    zlog_fini();
-    return -2;
+  
+  /* Parses ini file for config. */
+  if (ini_parse(INI_FILENAME, iniHandler, &gAppConfig) < 0)
+  {
+    zlog_fatal(gZlogCategories[ZLOG_MAIN], "Can't load '%s'\n", INI_FILENAME);
+    return 1;
   }
   
   /* Initializes SocketServer */
   SocketServerConfig config;
   config.eventHandler = SSECallback;
-  config.port = 3940;
+  config.port = gAppConfig.uServerPort;
 
-  zlog_info(main_zlog_category, "Initializing SocketServer");
+  zlog_info(gZlogCategories[ZLOG_MAIN], "Initializing SocketServer on port %d\n", config.port);
   SocketServerInit(config);
   
   
   SocketServerStart();
   SocketServerRun();
+
+
   SocketServerStop();
   SocketServerDestroy();
 
-
-  zlog_fini();
-
+  zLogDestroy();
+  
   return 0;
 }
