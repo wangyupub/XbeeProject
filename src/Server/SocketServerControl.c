@@ -26,7 +26,7 @@ void *get_in_addr(struct sockaddr *sa)
     return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-int SocketServerInit(SocketServerConfig config)
+int SocketServerInit(SocketServerConfig* config)
 {
   int status;
   struct addrinfo hints;
@@ -37,8 +37,8 @@ int SocketServerInit(SocketServerConfig config)
   hints.ai_socktype = SOCK_STREAM; /* TCP stream sockets */
   hints.ai_flags = AI_PASSIVE;     /* fill in my IP for me */
 
-  gSocketServerHandler = config.eventHandler;
-  snprintf(port, sizeof(port), "%d", config.port);
+  gSocketServerHandler = config->eventHandler;
+  snprintf(port, sizeof(port), "%d", config->port);
   
   if ((status = getaddrinfo(NULL, port, &hints, &servinfo)) != 0)
   {

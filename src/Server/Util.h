@@ -4,6 +4,8 @@
 #include "zlog.h"
 #include "ini.h"
 
+#define CONFIG_STRING_LEN 32
+
 /* Definition of zlog categories */
 typedef enum
 {
@@ -14,6 +16,15 @@ typedef enum
   ZLOG_TOTAL
 } ZLOG_CATEGORIES;
 
+/* Settings needed to set up XBee */
+typedef struct
+{
+  char*		szXBeeMode;
+  char*		szDevicePath;
+  int		iBaudRate;
+  
+} XBeeRadioConfig;
+
 /* Struct holding configuration parsed from ini file */
 typedef struct
 {
@@ -21,7 +32,7 @@ typedef struct
   int		uServerPort;
   
   /* Section XBeeControl */
-  
+  XBeeRadioConfig xbeeRadioConfig;
 } AppConfig;
 
 

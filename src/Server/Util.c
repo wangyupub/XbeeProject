@@ -5,8 +5,19 @@
  * party tools.
  * 
  ********************************************************************/
+#include <string.h>
 
 #include "Util.h"
+
+
+unsigned int htoi(char *s)
+{
+	unsigned int n;
+	int r;
+
+	r = sscanf(s, "%x", &n);
+	return n;
+}
 
 int zLogInit()
 {
@@ -29,21 +40,21 @@ int zLogInit()
   if (!gZlogCategories[ZLOG_SOCKET])
   {
     zLogDestroy();
-    printf("zlog get cat fail\n");
+    zlog_fatal(gZlogCategories[ZLOG_MAIN], "zlog get cat fail\n");
     return -2;
   }
   gZlogCategories[ZLOG_XBEE] = zlog_get_category("XBEE");
   if (!gZlogCategories[ZLOG_XBEE])
   {
     zLogDestroy();
-    printf("zlog get cat fail\n");
+    zlog_fatal(gZlogCategories[ZLOG_MAIN],"zlog get cat fail\n");
     return -2;
   }
   gZlogCategories[ZLOG_COMMAND] = zlog_get_category("COMMAND");
   if (!gZlogCategories[ZLOG_COMMAND])
   {
     zLogDestroy();
-    printf("zlog get cat fail\n");
+    zlog_fatal(gZlogCategories[ZLOG_MAIN], "zlog get cat fail\n");
     return -2;
   }
 
@@ -59,27 +70,42 @@ int zLogDestroy()
 
 int iniHandler(void* user, const char* section, const char* name, const char* value)
 {
-
+    int address;
+    long long longAddress;
+  
     AppConfig* pconfig = (AppConfig*) user;
 
     #define MATCH(s, n) strcmp(section, s) == 0 && strcmp(name, n) == 0
     if (MATCH("SocketServer", "ServerPort"))
     {
-        pconfig->uServerPort = atoi(value);
+      pconfig->uServerPort = atoi(value);
     }
-    /*
-    else if (MATCH("user", "name"))
+    else if (MATCH("XBeeControl", "XBeeMode"))
     {
-        pconfig->name = strdup(value);
+      pconfig->xbeeRadioConfig.szXBeeMode = strdup(value);
     }
-    else if (MATCH("user", "email"))
+    else if (MATCH("XBeeControl", "DevicePath"))
     {
-        pconfig->email = strdup(value);
+      pconfig->xbeeRadioConfig.szDevicePath = strdup(value);
     }
-    */
+    else if (MATCH("XBeeControl", "BaudRate"))
+    {
+      pconfig->xbeeRadioConfig.iBaudRate = atoi(value);
+    }
+    else if (MATCH("XBeeNetwork", "Address"))
+    {
+/*
+      address = htoi(value);
+      longAddress = strtol(value, NULL, 16);
+      
+      zlog_debug(gZlogCategories[ZLOG_MAIN], "(%s) converted to int: %x long int: %x\n", value, address, longAddress);
+*/
+      
+    }
     else
     {
-        return 0;  /* unknown section/name, error */
+      zlog_warn(gZlogCategories[ZLOG_MAIN], "Unrecognized token in ini file Section: [%s] Name: %s.\n", section, name);
+      return 0;  /* unknown section/name, error */
     }
     return 1;  
 }

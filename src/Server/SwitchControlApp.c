@@ -11,8 +11,9 @@
 
 #include "Util.h"
 #include "SocketServerControl.h"
+#include "XBeeInterface.h"
 
-static AppConfig gAppConfig;
+AppConfig gAppConfig;
 
 void SSECallback(int sid, SocketServerEvent event, void* data, int data_len)
 {
@@ -51,6 +52,7 @@ int main(void)
   }
   
   /* Parses ini file for config. */
+  memset(&gAppConfig, 0, sizeof(AppConfig));
   if (ini_parse(INI_FILENAME, iniHandler, &gAppConfig) < 0)
   {
     zlog_fatal(gZlogCategories[ZLOG_MAIN], "Can't load '%s'\n", INI_FILENAME);
@@ -63,12 +65,16 @@ int main(void)
   config.port = gAppConfig.uServerPort;
 
   zlog_info(gZlogCategories[ZLOG_MAIN], "Initializing SocketServer on port %d\n", config.port);
-  SocketServerInit(config);
+  SocketServerInit(&config);
   
+  /* Initializes local XBee radio */
+  XBeeRadioInit(&gAppConfig.xbeeRadioConfig);
   
   SocketServerStart();
   SocketServerRun();
 
+  /* Destroys local XBee radio */
+  XBeeRadioDestroy();
 
   SocketServerStop();
   SocketServerDestroy();

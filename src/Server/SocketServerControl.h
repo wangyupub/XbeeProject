@@ -35,7 +35,7 @@ typedef struct
 } SocketServerConfig;
 
 /* Setup SocketServer module */
-int SocketServerInit(SocketServerConfig config);
+int SocketServerInit(SocketServerConfig* config);
 
 /* Clean up SocketServer module*/
 int SocketServerShutdown();
