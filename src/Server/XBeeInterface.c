@@ -47,7 +47,7 @@ int XBeeRadioDestroy()
 
 }
 
-int XBeeRadioConnect(XBeeConnectionConfig* conncetionConfig)
+int XBeeRadioConnect(XBeeConnectionConfig* connectionConfig)
 {
   xbee_err ret;
 /*
@@ -64,7 +64,7 @@ int XBeeRadioConnect(XBeeConnectionConfig* conncetionConfig)
   address.addr64[7] = 0xBC;
 */
   if ((ret = xbee_conNew(xbee, &con,
-    conncetionConfig->connectionType/* "Data" */, &conncetionConfig->address)) != XBEE_ENONE)
+    connectionConfig->connectionType/* "Data" */, &connectionConfig->address)) != XBEE_ENONE)
   {
     xbee_log(xbee, -1, "xbee_conNew() returned: %d (%s)", ret, xbee_errorToStr(ret));
     zlog_fatal(gZlogCategories[ZLOG_XBEE], "xbee_conNew() returned: %d (%s)", ret, xbee_errorToStr(ret));
@@ -72,14 +72,14 @@ int XBeeRadioConnect(XBeeConnectionConfig* conncetionConfig)
   }
 
   
-  if ((ret = xbee_conDataSet(con, xbee, conncetionConfig->connectionData)) != XBEE_ENONE)
+  if ((ret = xbee_conDataSet(con, xbee, connectionConfig->connectionData)) != XBEE_ENONE)
   {
     xbee_log(xbee, -1, "xbee_conDataSet() returned: %d", ret);
     zlog_fatal(gZlogCategories[ZLOG_XBEE], "xbee_conDataSet() returned: %d", ret);
     return ret;
   }
 
-  if ((ret = xbee_conCallbackSet(con, conncetionConfig->xbeeCallback, NULL)) != XBEE_ENONE)
+  if ((ret = xbee_conCallbackSet(con, connectionConfig->xbeeCallback, NULL)) != XBEE_ENONE)
   {
     xbee_log(xbee, -1, "xbee_conCallbackSet() returned: %d", ret);
     zlog_fatal(gZlogCategories[ZLOG_XBEE],  "xbee_conCallbackSet() returned: %d", ret);
@@ -89,6 +89,53 @@ int XBeeRadioConnect(XBeeConnectionConfig* conncetionConfig)
   return 0;
 }
 
+int XBeeRadioConnectBroadCast(XBeeConnectionConfig* connectionConfig)
+{
+  xbee_err ret;
+
+  struct xbee_conAddress address;
+
+  memset(&address, 0, sizeof(address));
+  address.addr64_enabled = 1;
+  address.addr64[0] = 0x00;
+  address.addr64[1] = 0x00;
+  address.addr64[2] = 0x00;
+  address.addr64[3] = 0x00;
+  address.addr64[4] = 0x00;
+  address.addr64[5] = 0x00;
+  address.addr64[6] = 0xFF;
+  address.addr64[7] = 0xFF;
+
+  if ((ret = xbee_conNew(xbee, &con,
+    connectionConfig->connectionType/* "Data" */, &address)) != XBEE_ENONE)
+  {
+    xbee_log(xbee, -1, "xbee_conNew() returned: %d (%s)", ret, xbee_errorToStr(ret));
+    zlog_fatal(gZlogCategories[ZLOG_XBEE], "xbee_conNew() returned: %d (%s)", ret, xbee_errorToStr(ret));
+    return ret;
+  }
+
+  
+  if ((ret = xbee_conDataSet(con, xbee, connectionConfig->connectionData)) != XBEE_ENONE)
+  {
+    xbee_log(xbee, -1, "xbee_conDataSet() returned: %d", ret);
+    zlog_fatal(gZlogCategories[ZLOG_XBEE], "xbee_conDataSet() returned: %d", ret);
+    return ret;
+  }
+
+  if ((ret = xbee_conCallbackSet(con, connectionConfig->xbeeCallback, NULL)) != XBEE_ENONE)
+  {
+    xbee_log(xbee, -1, "xbee_conCallbackSet() returned: %d", ret);
+    zlog_fatal(gZlogCategories[ZLOG_XBEE],  "xbee_conCallbackSet() returned: %d", ret);
+    return ret;
+  }
+  
+  /* getting an ACK for a broadcast message is kinda pointless... */
+  xbee_conSettings(con, NULL, &settings);
+  settings.disableAck = 1;
+  xbee_conSettings(con, &settings, NULL);
+
+  return 0;
+}
 
 int XBeeRadioDisconnect()
 {
