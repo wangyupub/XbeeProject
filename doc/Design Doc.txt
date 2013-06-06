@@ -102,6 +102,8 @@ CommandType | CommandParameter ...
 
 Commands in Details:
 
+Instant Commands (Commands will be processed when received):
+
 1. SetSingleSwitch=0xC1;
 Sets single switch state
 Param 1: SwitchIndex (2 bytes) up to 65535 switches
@@ -139,7 +141,35 @@ Sets single switch state with a time delay
 Param 1: SwitchIndex (2 bytes)
 Param 2: Delay (ms) (2 bytes) up to 65535 s = 18.2小时
 Total (5 bytes)
-server returns Success/Fail(1 bytes)
+server returns Success/Fail (1 byte)
+
+7. PassThrough=0xC7;
+Broadcast data without parsing
+Param 1: DataLength (1 byte)
+Param 2: Data (Length specified by DataLength)
+Total (DataLength + 2 bytes)
+server returns Success / Fail (1 byte)
+
+Scheduled Commands (Run as scheduled tasks)
+
+1. SetScheduledTask = 0x31;
+Setup a scheduled task
+Param 1: Instant Command Body (either SetSingleSwitch or SetMultipleSwitches, as defined above) (4 / 10 bytes)
+Param 2: Trigger Criteria (EveryDayAt, EveryHourAt, EveryWeekDayAt, EveryMonthOn, EveryYearOn) (1 byte)
+Param 3: Trigger Date / Time (2 byte)
+Total (4 / 10 + 4 bytes)
+server returns Scheduled Task Id (1 byte)
+
+2. GetScheduledTask = 0x32;
+Param 1: Schedule Task Id (1 byte)
+Total 2 bytes
+server returns scheduled task content (4 / 10 + 3 bytes)
+
+3. DeleteScheduledTask = 0x33;
+Param 1: Schedule Task Id (1 byte)
+Total 2 bytes
+server returns Success / Fail (1 byte)
+
 
 Multi-Command Packet
 
@@ -148,11 +178,11 @@ Format:
 0xAC (Multi-Command Header)| CommandCount | CommandType 1 | CommandParameter(s) 1 | CommandType 2| ...
 
 Note:
-Once the first two bytes are received, the server Command Logic would start populating the list of commands. It will keep parsing the data received by the Socket Control until it reaches the end of the last command. A bit tricky to handle the buffer though. Alternative way is to have the size as part of the packet buffer and let Server Socket Control handle the data ressembling.
-
-Since a command can be up to 10 bytes, while the smallest command is only 1 byte, padding all commands up to same size is not a good idea. Or we can have a constraint that in one Multi-Command Packet, only one command type is allowed.
+Once the first two bytes are received, the server Command Logic would start populating the list of commands. It will keep parsing the data received by the Socket Control until it reaches the end of the last command. A bit tricky to handle the buffer though. 
 
 There should be a limit to the maximum size / number of commands for the Packet.
+
+
 
 From eastwood: 
 1. The server should understand a cammand when the Command Type is parsed. Then server will know the size of a command. A　more secure coding way i can figure out is to create 10 bytes buffer for each command.
