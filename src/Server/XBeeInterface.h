@@ -5,7 +5,7 @@
 
 #include "Util.h"
 
-
+/*todo: add a memory clean up funciton for XBeeConnectionConfig */
 typedef struct
 {
   struct xbee_conAddress	address;

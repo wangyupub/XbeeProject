@@ -25,14 +25,47 @@ typedef struct
   
 } XBeeRadioConfig;
 
+/* only star is supported */
+typedef enum
+{
+  NetworkInvalid = -1,
+  NetworkPair = 0,
+  NetworkStar,
+  NetworkMesh,
+  NetworkClusterTree,
+} NetworkTopology;
+
+/* Settings to set up Radio Network */
+typedef struct
+{
+  int 		endPointCount;
+  int		switchCountPerEndPoint;
+} StarNetworkConfig;
+
+typedef struct
+{
+  union
+  {
+    /* seems a bit redundant for now, new supported network topologies go here*/
+    StarNetworkConfig 	starConfig;
+  } detailConfig;
+  NetworkTopology	topology;
+  int			commandPoolSize;
+  int*			addressBuffer;
+} RadioNetworkConfig;
+
 /* Struct holding configuration parsed from ini file */
 typedef struct
 {
   /* Section SocketServer */
-  int		uServerPort;
+  int			uServerPort;
   
   /* Section XBeeControl */
-  XBeeRadioConfig xbeeRadioConfig;
+  XBeeRadioConfig	xbeeRadioConfig;
+  
+  /* Section Radio Network */
+  RadioNetworkConfig	radioNetworkConfig;
+  
 } AppConfig;
 
 

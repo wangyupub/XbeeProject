@@ -8,10 +8,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <pthread.h>
 
 #include "Util.h"
 #include "SocketServerControl.h"
 #include "XBeeInterface.h"
+#include "RadioNetwork.h"
 
 AppConfig gAppConfig;
 
@@ -45,6 +47,8 @@ int main(void)
 {
   int error;
   
+  pthread_t command_processor_pid;
+  
   /* Initializes zlog first.*/
   if (error = zLogInit() != 0)
   {
@@ -70,9 +74,21 @@ int main(void)
   /* Initializes local XBee radio */
   XBeeRadioInit(&gAppConfig.xbeeRadioConfig);
   
+  /* Initializes Radio Network */
+  RadioNetworkInit(&gAppConfig.radioNetworkConfig);
+  
+  /* Initializes command processing thread with default settings */
+  pthread_create(&command_processor_pid, NULL, &RadioNetworkProcessCommandQueue, NULL);
+  
   SocketServerStart();
   SocketServerRun();
+  
+  /* Wait to join the command processing thread */
+  pthread_join(command_processor_pid, NULL);
 
+  /* Destroys Radio Network */
+  RadioNetworkDestroy();
+  
   /* Destroys local XBee radio */
   XBeeRadioDestroy();
 

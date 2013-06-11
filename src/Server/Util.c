@@ -6,11 +6,13 @@
  * 
  ********************************************************************/
 #include <string.h>
+#include <stdlib.h>
 
 #include "Util.h"
 
 
-unsigned int htoi(char *s)
+
+unsigned int htoi(const char *s)
 {
 	unsigned int n;
 	int r;
@@ -92,15 +94,51 @@ int iniHandler(void* user, const char* section, const char* name, const char* va
     {
       pconfig->xbeeRadioConfig.iBaudRate = atoi(value);
     }
-    else if (MATCH("XBeeNetwork", "Address"))
+    else if (MATCH("RadioNetwork", "NetworkTopology"))
     {
-/*
-      address = htoi(value);
-      longAddress = strtol(value, NULL, 16);
+      if (strcmp("star", value) == 0)
+      {
+	pconfig->radioNetworkConfig.topology = NetworkStar;
+      }
+      else
+      {
+	zlog_warn(gZlogCategories[ZLOG_MAIN],
+		  "Unsupported radio network topology %s found in ini file Section: [%s] Name: %s.\n",
+	   value, section, name);
+      }
+    }
+    else if (MATCH("RadioNetwork", "CommandPoolSize"))
+    {
+      pconfig->radioNetworkConfig.commandPoolSize = atoi(value);
+    }
+    else if (MATCH("RadioNetwork", "StarEndPoints"))
+    {
+      pconfig->radioNetworkConfig.detailConfig.starConfig.endPointCount = atoi(value);
       
-      zlog_debug(gZlogCategories[ZLOG_MAIN], "(%s) converted to int: %x long int: %x\n", value, address, longAddress);
-*/
-      
+      /* allocating memory for address buffer, each endpoint takes 2 * 4 bytes */
+      int size = sizeof(int) * 2 * pconfig->radioNetworkConfig.detailConfig.starConfig.endPointCount;
+      pconfig->radioNetworkConfig.addressBuffer = malloc(size);
+      memset(pconfig->radioNetworkConfig.addressBuffer, 0, size);
+    }
+    else if (MATCH("RadioNetwork", "StarNumberSwitches"))
+    {
+      pconfig->radioNetworkConfig.detailConfig.starConfig.switchCountPerEndPoint = atoi(value);
+    }
+    else if (MATCH("RadioNetwork", "AddressHi") || MATCH("RadioNetwork", "AddressLo"))
+    {
+      /* copy the address into the pre-allocated buffer */
+      int* pointer = pconfig->radioNetworkConfig.addressBuffer;
+      if (pointer != NULL)
+      {
+	/* move pointer forward until the first zero (unfilled) int. */
+	while (*pointer != 0) ++pointer;
+	*pointer = htoi(value);
+      }
+      else
+      {
+	zlog_fatal(gZlogCategories[ZLOG_MAIN], "Address being set before EndPoints is set Section: [%s] Name: %s.\n", section, name);
+	return 0;
+      }
     }
     else
     {

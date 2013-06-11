@@ -21,7 +21,7 @@ LD_LIBRARY_PATH = -L $(LIBRARY_PATH_PREFIX)/$(ZLOG)/src -L $(LIBRARY_PATH_PREFIX
 LIBZLOG = $(LIBRARY_PATH_PREFIX)/$(ZLOG)/src/lib$(ZLOG).so
 LIBXBEE = $(LIBRARY_PATH_PREFIX)/$(XBEE)/lib/lib$(XBEE).so
 
-PROG = $(LIBRARY_PATH_PREFIX)/$(INIH)/ini.c SocketServerControl.c XBeeInterface.c SwitchControlApp.c Util.c
+PROG = $(LIBRARY_PATH_PREFIX)/$(INIH)/ini.c SocketServerControl.c XBeeInterface.c SwitchControlApp.c Util.c CommandLogic.c RadioNetwork.c
 OUT = SwitchControlApp
 
 
