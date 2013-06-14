@@ -7,6 +7,11 @@ Minor revision on command protocol.
 2013-5-15 version 3
 Respond to feedback. Adding support for Multi-Command Packet. Some clarification on multi-threading and command queue.
 
+2013-6-5 version 4
+Complete command protocol design. Adding Scheduled Commands and Pass Through Command.
+
+2013-6-13 versiosn 5
+A few corrections.
 
 SYSTEM MODULE
 
@@ -120,14 +125,14 @@ server returns SwitchStatus (1 byte)
 
 3. SetMultipleSwitches=0xC3
 Sets state for multiple switches (up to 64, starting at SwitchIndex) at once
-Param 1: SwitchIndex(2 byte)
+Param 1: SwitchOffset (2 bytes)
 Param 2: SwitchBitMask (8 bytes) up to 64 switches
 Total (10 bytes)
 Server returns Success/ Fail state (SwitchBitMask 8 bytes)
 
 4. GetMultipleSwitches=0xC4
 Gets state for multiple switches (up to 64, starting at SwitchIndex) at once
-Param 1: Index
+Param 1: SwitchOffset (2 bytes)
 Total (2 bytes)
 server returns SwitchBitMask (8 bytes)
 
@@ -139,8 +144,9 @@ server returns number (2 bytes)
 6. SetSingleSwitchDelay=0xC6;
 Sets single switch state with a time delay
 Param 1: SwitchIndex (2 bytes)
-Param 2: Delay (ms) (2 bytes) up to 65535 s = 18.2小时
-Total (5 bytes)
+Param 2: SwitchStatus (1 byte)
+Param 3: Delay (s) (2 bytes) up to 65535 s = 18.2 hours
+Total (6 bytes)
 server returns Success/Fail (1 byte)
 
 7. PassThrough=0xC7;
