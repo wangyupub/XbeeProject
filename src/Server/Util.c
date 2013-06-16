@@ -116,7 +116,7 @@ int iniHandler(void* user, const char* section, const char* name, const char* va
       pconfig->radioNetworkConfig.detailConfig.starConfig.endPointCount = atoi(value);
       
       /* allocating memory for address buffer, each endpoint takes 2 * 4 bytes */
-      int size = sizeof(int) * 2 * pconfig->radioNetworkConfig.detailConfig.starConfig.endPointCount;
+      int size = sizeof(uint32_t) * 2 * pconfig->radioNetworkConfig.detailConfig.starConfig.endPointCount;
       pconfig->radioNetworkConfig.addressBuffer = malloc(size);
       memset(pconfig->radioNetworkConfig.addressBuffer, 0, size);
     }
@@ -130,9 +130,19 @@ int iniHandler(void* user, const char* section, const char* name, const char* va
       int* pointer = pconfig->radioNetworkConfig.addressBuffer;
       if (pointer != NULL)
       {
+	int addressCount = 0;
 	/* move pointer forward until the first zero (unfilled) int. */
-	while (*pointer != 0) ++pointer;
+	while (*pointer != 0)
+	{
+	  ++pointer;
+	  if (++addressCount >= 2 * pconfig->radioNetworkConfig.detailConfig.starConfig.endPointCount)
+	  {
+	    zlog_warn(gZlogCategories[ZLOG_MAIN], "ini file parsing: more address needed is being set\n");
+	    return 0;
+	  }
+	}
 	*pointer = htoi(value);
+	zlog_debug(gZlogCategories[ZLOG_MAIN], "Parsing address: %x\n", *pointer);
       }
       else
       {

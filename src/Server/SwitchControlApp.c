@@ -13,6 +13,7 @@
 #include "Util.h"
 #include "SocketServerControl.h"
 #include "XBeeInterface.h"
+#include "CommandLogic.h"
 #include "RadioNetwork.h"
 
 AppConfig gAppConfig;
@@ -20,12 +21,19 @@ AppConfig gAppConfig;
 void SSECallback(int sid, SocketServerEvent event, void* data, int data_len)
 {
   zlog_debug(gZlogCategories[ZLOG_MAIN], "SSECallback is called %d\n", event);
+  
+/* pool size of the return data */
+#define RETURN_DATA_POOL_SIZE 16
+  
+  unsigned char buffer[RETURN_DATA_POOL_SIZE];
+  
   switch (event)
   {
     case SSE_RECEIVE:
     {
       if (data != NULL)
       {
+#if 0
 	char response[256];
 	memset(response, 0, sizeof(response));
 	
@@ -35,6 +43,15 @@ void SSECallback(int sid, SocketServerEvent event, void* data, int data_len)
 
 	int d = strncmp("exit", (char*)data, 4);
 	if (d == 0) exit(0);
+#endif //0
+	ParseCommand(data, data_len);
+	
+	/* Returns data response set up by RadioNetwork module */
+	int size = RadioNetworkGetReturnData(buffer);
+	if (size > 0)
+	{
+	  SocketServerSend(sid, buffer, size);
+	}
       }
     }
     break;

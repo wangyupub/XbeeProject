@@ -1,6 +1,7 @@
 #if !defined(__UTIL_H__)
 #define __UTIL_H__
 
+#include <stdint.h>
 #include "zlog.h"
 #include "ini.h"
 
@@ -51,7 +52,7 @@ typedef struct
   } detailConfig;
   NetworkTopology	topology;
   int			commandPoolSize;
-  int*			addressBuffer;
+  uint32_t*		addressBuffer;
 } RadioNetworkConfig;
 
 /* Struct holding configuration parsed from ini file */

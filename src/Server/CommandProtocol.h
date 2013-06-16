@@ -30,6 +30,6 @@
 
 #define IS_COMMAND_PACK(c) (c ^ MultipleCommandHeader == 0)
 
-
+typedef unsigned char command_type_t;
 
 #endif //__COMMAND_PROTOCOL_H__

@@ -15,7 +15,6 @@ typedef struct
   
 } XBeeConnectionConfig;
 
-
 /* Initializes XBee control */
 int XBeeRadioInit(const XBeeRadioConfig* xbeeConfig);
 
@@ -24,9 +23,6 @@ int XBeeRadioDestroy();
 
 /* Creates a connection with remote radio */
 int XBeeRadioConnect(XBeeConnectionConfig* conncetionConfig);
-
-/* Creates a broadcast connection (ignoring the destination address */
-int XBeeRadioConnectBroadCast(XBeeConnectionConfig* connectionConfig);
 
 /* Disconnects from remote radio */
 int XBeeRadioDisconnect();
