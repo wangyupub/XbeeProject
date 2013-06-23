@@ -702,7 +702,7 @@ int RadioNetworkGetReturnData(void* buffer)
       break;
       case CmdGetNumSwitches:
       {
-	memcpy(buffer, &command->toRet, command->retSize);
+	memcpy(buffer, command->toRet, command->retSize);
       }
       break;    
       default:
