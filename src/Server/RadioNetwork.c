@@ -63,15 +63,6 @@ typedef struct
   int			count;
 } CommandQueue;
 
-typedef struct
-{
-  unsigned char		returnDataPool[RETURN_DATA_POOL_SIZE];
-  int			returnDataSize; 
-  int			uid;
-} ReturnData;
-
-
-
 /* global command queue*/
 static CommandQueue	gCommandQueue;
 static CommandQueue	gAwaitingReturnQueue;
@@ -711,7 +702,7 @@ int RadioNetworkGetReturnData(void* buffer)
       break;
       case CmdGetNumSwitches:
       {
-	memcpy(buffer, &command->toRet, &command->retSize);
+	memcpy(buffer, &command->toRet, command->retSize);
       }
       break;    
       default:
