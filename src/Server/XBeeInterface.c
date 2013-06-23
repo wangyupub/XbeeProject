@@ -5,6 +5,7 @@
  * 
  ********************************************************************/
 #include <string.h>
+#include <assert.h>
 
 #include "XBeeInterface.h"
 
@@ -121,6 +122,7 @@ int XBeeRadioDisconnect()
 int XBeeRadioSend(const unsigned char* data, int len)
 {
   xbee_err ret;
+  assert(data != NULL);
   if (ret = xbee_connTx(con, NULL, data, len) != XBEE_ENONE)
   {
     xbee_log(xbee, -1, "xbee_connTx() returned: %s\n", xbee_errorToStr(ret));
@@ -132,3 +134,47 @@ int XBeeRadioSend(const unsigned char* data, int len)
     return 0;
   }
 }
+
+int XBeeRadioReceive(void *buffer, int bufferSize, int wait, int* dataLen)
+{
+  xbee_err ret;
+  struct xbee_pkt* pkt = NULL;
+  int remaining;
+  
+  if (wait != 0)
+  {
+    ret = xbee_conRxWait(con, &pkt, &remaining);
+  }
+  else
+  {
+    ret = xbee_conRx(con, &pkt, &remaining);
+  }
+  
+  if (ret == XBEE_EINVAL)
+  {
+    zlog_warn(gZlogCategories[ZLOG_XBEE],  "XBeeRadioReceive: Calling xbee_conRx / xbee_conRxWait while a callback is set\n");
+  }
+  else if (ret == XBEE_ENOTEXISTS)
+  {
+    zlog_debug(gZlogCategories[ZLOG_XBEE], "XBeeRadioReceive: No packet is available\n");
+  }
+  else if (ret == XBEE_ENONE)
+  {
+    assert(buffer != NULL);
+    int len = bufferSize < pkt->dataLen ? bufferSize : pkt->dataLen;
+    memcpy(buffer, pkt->data, len);
+    if (dataLen != NULL)
+    {
+      *dataLen = len;
+    }
+    
+    xbee_pktFree(pkt);
+  }
+  else /* ret != XBEE_ENONE */
+  {
+    zlog_fatal(gZlogCategories[ZLOG_XBEE],  "xbee_connRx() returned: %d", ret);
+  }
+  
+  return ret;
+}
+

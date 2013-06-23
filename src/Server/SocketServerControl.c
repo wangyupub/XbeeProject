@@ -15,6 +15,7 @@ struct addrinfo *servinfo;  /* will point to the results */
 int socketfd;
 int new_fd;
 SocketServerEventHandler gSocketServerHandler;
+SocketServerCustomUpdate gSocketServerCustomUpdate;
 
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
@@ -39,6 +40,8 @@ int SocketServerInit(SocketServerConfig* config)
 
   gSocketServerHandler = config->eventHandler;
   snprintf(port, sizeof(port), "%d", config->port);
+  
+  gSocketServerCustomUpdate = config->customUpdate;
   
   if ((status = getaddrinfo(NULL, port, &hints, &servinfo)) != 0)
   {
@@ -163,6 +166,8 @@ int SocketServerRun()
 	  SocketServerStart();
 	  break;
 	}
+	
+	if (gSocketServerCustomUpdate != NULL) gSocketServerCustomUpdate(new_fd);
       }
     }
   }

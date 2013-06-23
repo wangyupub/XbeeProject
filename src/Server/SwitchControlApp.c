@@ -22,11 +22,6 @@ void SSECallback(int sid, SocketServerEvent event, void* data, int data_len)
 {
   zlog_debug(gZlogCategories[ZLOG_MAIN], "SSECallback is called %d\n", event);
   
-/* pool size of the return data */
-#define RETURN_DATA_POOL_SIZE 16
-  
-  unsigned char buffer[RETURN_DATA_POOL_SIZE];
-  
   switch (event)
   {
     case SSE_RECEIVE:
@@ -46,18 +41,33 @@ void SSECallback(int sid, SocketServerEvent event, void* data, int data_len)
 #endif //0
 	ParseCommand(data, data_len);
 	
-	/* Returns data response set up by RadioNetwork module */
-	int size = RadioNetworkGetReturnData(buffer);
-	if (size > 0)
-	{
-	  SocketServerSend(sid, buffer, size);
-	}
       }
     }
     break;
     default:
       break;
   }
+}
+
+void UpdateReturnData(int sid)
+{
+/* pool size of the return data */
+#define RETURN_DATA_POOL_SIZE 16
+  
+  unsigned char buffer[RETURN_DATA_POOL_SIZE];
+
+  /* Returns data response set up by RadioNetwork module */
+  int size = RadioNetworkGetReturnData(buffer);
+  if (size > 0)
+  {
+    SocketServerSend(sid, buffer, size);
+  }
+  
+}
+
+void FinalCleanup()
+{
+  free(gAppConfig.radioNetworkConfig.addressBuffer);
 }
 
 int main(void)
@@ -83,6 +93,7 @@ int main(void)
   /* Initializes SocketServer */
   SocketServerConfig config;
   config.eventHandler = SSECallback;
+  config.customUpdate = UpdateReturnData;
   config.port = gAppConfig.uServerPort;
 
   zlog_info(gZlogCategories[ZLOG_MAIN], "Initializing SocketServer on port %d\n", config.port);
@@ -103,16 +114,20 @@ int main(void)
   /* Wait to join the command processing thread */
   pthread_join(command_processor_pid, NULL);
 
+  SocketServerStop();
+  SocketServerDestroy();
+
   /* Destroys Radio Network */
   RadioNetworkDestroy();
   
   /* Destroys local XBee radio */
   XBeeRadioDestroy();
 
-  SocketServerStop();
-  SocketServerDestroy();
 
   zLogDestroy();
+
+  /* final clean ups of memory */
+  FinalCleanup();  
   
   return 0;
 }

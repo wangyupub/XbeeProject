@@ -30,4 +30,7 @@ int XBeeRadioDisconnect();
 /* Sends data to remote radio */
 int XBeeRadioSend(const unsigned char* data, int len);
 
+/* Receives data from remote radio */
+int XBeeRadioReceive(void *buffer, int bufferSize, int wait, int* dataLen);
+
 #endif //__XBEE_INTERFACE_H__

@@ -72,7 +72,12 @@ int ParseCommand(void *data, int dataLength)
       }
       break;
       case CmdGetSingleSwitch:
-	break;
+      {
+	uint16_t switchIndex = _GetParamInt16(pointer);
+	
+	RadioNetworkAppendCommand(commandType, switchIndex);	
+      }
+      break;
       case CmdSetMultipleSwitches:
       {
 	uint16_t switchOffset = _GetParamInt16(pointer);
@@ -84,9 +89,17 @@ int ParseCommand(void *data, int dataLength)
       }
       break;
       case CmdGetMultipleSwitches:
-	break;
+      {
+	uint16_t switchOffset = _GetParamInt16(pointer);
+
+	RadioNetworkAppendCommand(commandType, switchOffset);
+      }
+      break;
       case CmdGetNumSwitches:
-	break;
+      {
+	RadioNetworkAppendCommand(commandType);
+      }
+      break;
       case CmdSetSingleSwitchDelay:
       {
 	uint16_t switchIndex = _GetParamInt16(pointer);

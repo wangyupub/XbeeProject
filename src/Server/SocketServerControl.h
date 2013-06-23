@@ -26,12 +26,14 @@ typedef enum
 /* Event Handler Callback */
 typedef void (*SocketServerEventHandler)(int sid, SocketServerEvent event, void* data, int data_len);
 
+typedef void (*SocketServerCustomUpdate)(int sid);
+
 typedef struct
 {
   int				port;
   int				maxConcurrentConnection;
   SocketServerEventHandler	eventHandler;
-  
+  SocketServerCustomUpdate	customUpdate;
 } SocketServerConfig;
 
 /* Setup SocketServer module */
