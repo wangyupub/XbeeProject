@@ -36,10 +36,10 @@ public class SwitchControlClient {
 		String userInput;
 		try {
 			while ((userInput = stdIn.readLine()) != null) {
-//				out.println(userInput);
+				System.out.println(userInput + "///");
 				AbstractCommand command = new PassThroughCommand(userInput);
 				command.Send(clientSocket);
-				System.out.println("echo: " + in.readLine());
+				System.out.println("echo: " + in.read());
 			}
 		} catch (IOException e) {
 			System.err.println("Cannot get user input.");

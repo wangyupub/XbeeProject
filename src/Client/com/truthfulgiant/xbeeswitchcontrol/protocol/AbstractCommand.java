@@ -38,6 +38,9 @@ public abstract class AbstractCommand {
 	
 	AbstractCommand(Byte type) {
 		this.commandType = type;
+		
+		//maximum 10 parameters now
+		parameters = new Vector<Number>(10);
 		parameters.clear();
 	}
 	
@@ -45,28 +48,40 @@ public abstract class AbstractCommand {
 	 * Builds byte buffer for network transmission.
 	 */
 	public void BuildByteBuffer() {
-		buffer.clear();
-
+		
+		ByteBuffer tempBuffer=ByteBuffer.allocate(1024);
+		int bufferSize = 0;
+		
 		// put command type first
-		buffer.put(GetCommandType());
+		tempBuffer.put(GetCommandType());
+		bufferSize += Byte.SIZE/ Byte.SIZE;
 		
 		for (Number n : parameters) {
 			if (n instanceof Byte) {
-				buffer.put(n.byteValue());
+				tempBuffer.put(n.byteValue());
+				bufferSize += Byte.SIZE / Byte.SIZE;
 			}
 			else if (n instanceof Short) {
-				buffer.putShort(n.shortValue());
+				tempBuffer.putShort(n.shortValue());
+				bufferSize += Short.SIZE / Byte.SIZE;
 			}
 			else if (n instanceof Integer) {
-				buffer.putInt(n.intValue());
+				tempBuffer.putInt(n.intValue());
+				bufferSize += Integer.SIZE / Byte.SIZE;
 			}
 			else if (n instanceof Long) {
-				buffer.putLong(n.longValue());
+				tempBuffer.putLong(n.longValue());
+				bufferSize += Long.SIZE / Byte.SIZE;
 			}
 			else {
 //TODO:				throw Exception;
 			}
 		}
+		
+		buffer = ByteBuffer.allocate(bufferSize);
+		buffer.put(tempBuffer.array(), 0, bufferSize);
+		
+		System.out.println("Build Command Byte (" + bufferSize + " bytes):" + buffer.asCharBuffer());
 	}
 	
 	/**

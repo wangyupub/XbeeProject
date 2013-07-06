@@ -14,12 +14,17 @@ public class PassThroughCommand extends AbstractCommand {
 	
 	public PassThroughCommand(byte[] data) {
 		this();
+		AppendParam((byte) data.length);
 		AppendParam(data);
 	}
 	
 	public PassThroughCommand(String data) {
 		this();
-		AppendParam(data.getBytes());
+		//treating string as single byte
+		AppendParam((byte) data.length());
+		for (char c : data.toCharArray()) {
+			AppendParam((byte) c);
+		}
 	}
 	
 	protected void AppendParam(byte[] byteArray) {
