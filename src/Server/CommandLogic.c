@@ -46,6 +46,8 @@ int ParseCommand(void *data, int dataLength)
   command_type_t commandType = _GetParamChar8(pointer);
   ++pointer;
   
+  zlog_debug(gZlogCategories[ZLOG_COMMAND], "CommandType [%u|%x]", commandType, commandType);
+  
   if (IS_COMMAND_PACK(commandType))
   {
     int commandCount = _GetParamChar8(pointer);
@@ -139,14 +141,17 @@ int ParseCommand(void *data, int dataLength)
 /* given the address of a command data buffer, return the length of the command data */
 int GetCommandLength(void *commandBuffer)
 {
-  char* buffer = (char*)commandBuffer;
+  unsigned char* buffer = (unsigned char*)commandBuffer;
   command_type_t commandType = *buffer;
   
+  zlog_debug(gZlogCategories[ZLOG_COMMAND], "CommandType [%u|%x]", commandType, commandType);
+
   int toRet = 0;
   
   /* getting length for command pack is more for debug purposes */
   if (IS_COMMAND_PACK(commandType))
   {
+    zlog_debug(gZlogCategories[ZLOG_COMMAND], "COMMAND_PACK");
     int commandCount = *(buffer + 1);
     int i;
     int length;
@@ -199,7 +204,7 @@ int GetCommandLength(void *commandBuffer)
 	break;
       default:
       {
-	zlog_warn(gZlogCategories[ZLOG_COMMAND], "GetCommandLength: unhandled commandType: %x\n", commandType);
+//	zlog_warn(gZlogCategories[ZLOG_COMMAND], "GetCommandLength: unhandled commandType: %x\n", commandType);
 	toRet = -1;
       }
       break;

@@ -26,6 +26,9 @@
  * where / when / what to send.
  * 
  ******************************************************************/
+
+typedef void(*fpointer)();
+
 typedef struct
 {
   XBeeConnectionConfig	config;
@@ -83,14 +86,16 @@ void _InitQueue(CommandQueue* queue)
 void _AddCommand(CommandQueue* queue, RadioCommand* command)
 {
   int err = 0;
-  
+    
   CommandNode_t* node = malloc(sizeof(CommandNode_t));
   /* always check on malloc */
   assert(node != NULL);
   
+  node->pCommand = command;
+  
   /* entering critical zone */
   err = pthread_rwlock_wrlock(&queue->lock);
-  if (err != 0) zlog_fatal(gZlogCategories[ZLOG_COMMAND], "_AddCommand fail to acquire lock\n");
+  if (err != 0) zlog_fatal(gZlogCategories[ZLOG_COMMAND], "_AddCommand fail to acquire lock");
   
 #if defined(INSERT_COMMAND)
   node->pPrev = NULL;
@@ -111,11 +116,11 @@ void _AddCommand(CommandQueue* queue, RadioCommand* command)
   queue->pTail = node;
   queue->count++;
   
-  zlog_debug(gZlogCategories[ZLOG_COMMAND], "_AddCommand: %d command(s) in queue after 1 new added\n", queue->count);
+  zlog_debug(gZlogCategories[ZLOG_COMMAND], "_AddCommand: %d command(s) in queue after 1 new added", queue->count);
   
   /* leaving critical zone */
   err = pthread_rwlock_unlock(&queue->lock);
-  if (err != 0) zlog_fatal(gZlogCategories[ZLOG_COMMAND], "_AddCommand fail to release lock\n");
+  if (err != 0) zlog_fatal(gZlogCategories[ZLOG_COMMAND], "_AddCommand fail to release lock");
   
 }
 
@@ -135,7 +140,7 @@ RadioCommand* _RetrieveCommand(CommandQueue *queue)
   RadioCommand* toRet;
   CommandNode_t* node = NULL;
   err = pthread_rwlock_wrlock(&queue->lock);
-  if (err != 0) zlog_fatal(gZlogCategories[ZLOG_COMMAND], "_RetrieveCommand fail to acquire lock\n");
+  if (err != 0) zlog_fatal(gZlogCategories[ZLOG_COMMAND], "_RetrieveCommand fail to acquire lock");
 
   if (queue->pHead == NULL)
     toRet = NULL;
@@ -159,12 +164,13 @@ RadioCommand* _RetrieveCommand(CommandQueue *queue)
 
     free(node);
 
-    zlog_debug(gZlogCategories[ZLOG_COMMAND], "_RetrieveCommand: %d command(s) in queue after 1 new removed\n", queue->count);
+    zlog_debug(gZlogCategories[ZLOG_COMMAND], "_RetrieveCommand: %d command(s) in queue after 1 new removed", queue->count);
   }
 
 
   err = pthread_rwlock_unlock(&queue->lock);
-  if (err != 0) zlog_fatal(gZlogCategories[ZLOG_COMMAND], "_RetrieveCommand fail to release lock\n");
+  if (err != 0) zlog_fatal(gZlogCategories[ZLOG_COMMAND], "_RetrieveCommand fail to release lock");
+  return toRet;
 }
 
 void _DestroyQueue(CommandQueue* queue)
@@ -183,12 +189,18 @@ void _DestroyQueue(CommandQueue* queue)
 
 int _ProcessCommand(RadioCommand* pCommand)
 {
-  assert(pCommand != NULL);
-      
-  XBeeRadioConnect(&pCommand->config);
+  int ret = 0;
   
-  XBeeRadioSend(pCommand->toSend, pCommand->sendSize);
-
+  assert(pCommand != NULL);
+  
+  zlog_debug(gZlogCategories[ZLOG_COMMAND], "_ProcessCommand process command");
+  
+  ret = XBeeRadioConnect(&pCommand->config);  
+  assert(ret == 0);
+  
+  ret = XBeeRadioSend(pCommand->toSend, pCommand->sendSize);
+  assert(ret == 0);
+  
 #if !defined(USE_XBEE_CALLBACK) 
   /* Sets data received as return data */
   
@@ -198,7 +210,7 @@ int _ProcessCommand(RadioCommand* pCommand)
   memset(buffer, 0, RETURN_DATA_POOL_SIZE);
   
   /* always wait for XBee radio to return now, since right now XBee does not keep multiple connections */
-  int ret = XBeeRadioReceive(buffer, RETURN_DATA_POOL_SIZE, 0, &dataLen);
+  ret = XBeeRadioReceive(buffer, RETURN_DATA_POOL_SIZE, 0, &dataLen);
 
   if (ret == 0)
   {
@@ -207,6 +219,13 @@ int _ProcessCommand(RadioCommand* pCommand)
     
     /* puts into queue waiting for return data process */
     _AddCommand(&gAwaitingReturnQueue, pCommand);
+  }
+  else
+  {
+    unsigned char success = 0;
+    _SetReturnData(pCommand, &success, sizeof(success));
+    _AddCommand(&gAwaitingReturnQueue, pCommand);
+    
   }
   /* todo: resend goes here if needed. */
 #endif //defined(USE_XBEE_CALLBACK)  
@@ -288,7 +307,7 @@ void RadioNetworkInit(RadioNetworkConfig* config)
   
   /* now parse the address buffer to actual XBeeBuffer */
   
-  zlog_debug(gZlogCategories[ZLOG_COMMAND], "converting addressBuffer\n");
+  zlog_debug(gZlogCategories[ZLOG_COMMAND], "converting addressBuffer");
   int* pBuffer = config->addressBuffer;
   for (i = 0; i < g_radio_network_spec.endpoint_count; ++i)
   {
@@ -309,12 +328,14 @@ void* RadioNetworkProcessCommandQueue(void *arg)
     RadioCommand *command = _RetrieveCommand(&gCommandQueue);
     if (command != NULL)
     {
+      zlog_debug(gZlogCategories[ZLOG_COMMAND],
+	"RadioNetworkProcessCommandQueue: processing a command");
       time_t current = time((time_t*)NULL);
       /* not ready to trigger the command with delay, put it back to the queue*/
       if (command->triggerTime > current)
       {
 	zlog_debug(gZlogCategories[ZLOG_COMMAND],
-		   "Delayed Command not ready to process. [trigger: %d; current: %d]\n", (int)command->triggerTime, (int)current);
+		   "Delayed Command not ready to process. [trigger: %d; current: %d]", (int)command->triggerTime, (int)current);
 	_AddCommand(&gCommandQueue, command);
       }
       else
@@ -324,6 +345,11 @@ void* RadioNetworkProcessCommandQueue(void *arg)
     }
     else
     {
+      if (arg != NULL)
+      {
+	fpointer func = (fpointer) arg;
+	func();
+      }
       /* sleep for 1 sec */
       sleep(1);
     }
@@ -449,7 +475,7 @@ void RadioNetworkAppendCommand(command_type_t commandType, ...)
   RadioCommand *new_command = NULL;
   
   va_list params;
-  va_start(params, commandType);  
+  va_start(params, commandType);
 
   switch (commandType)
   {
@@ -468,6 +494,7 @@ void RadioNetworkAppendCommand(command_type_t commandType, ...)
       
       _FillCommand(new_command, switchIndex, switchStatus);
       /* add delay period */
+      new_command->commandType = commandType;
       new_command->triggerTime = commandType;
       new_command->triggerTime += delay;
       _AddCommand(&gCommandQueue, new_command);
@@ -508,6 +535,7 @@ void RadioNetworkAppendCommand(command_type_t commandType, ...)
 
 	/* sets up command type for collecting the return data. */
 	new_command->triggerTime = commandType;
+	new_command->commandType = commandType;
 	
 	_AddCommand(&gCommandQueue, new_command);
 	
@@ -552,6 +580,8 @@ void RadioNetworkAppendCommand(command_type_t commandType, ...)
       new_command->config.address.addr64[6] = 0xFF;
       new_command->config.address.addr64[7] = 0xFF;      
 
+      new_command->commandType = commandType;
+
 //      _FillCommand(new_command, switchIndex, switchStatus);
       _AddCommand(&gCommandQueue, new_command);
 
@@ -571,6 +601,8 @@ void RadioNetworkAppendCommand(command_type_t commandType, ...)
       new_command->customData = swictchIndexInEndpoint;
       
       _FillCommandA(new_command, endPointIndex, &data, sizeof(char));
+      new_command->commandType = commandType;
+
       _AddCommand(&gCommandQueue, new_command);
     }
     break;
@@ -590,6 +622,8 @@ void RadioNetworkAppendCommand(command_type_t commandType, ...)
       uint16_t num_switches = g_radio_network_spec.switch_count * g_radio_network_spec.endpoint_count;
       num_switches = htons(num_switches);
       _SetReturnData(new_command, &num_switches, sizeof(uint16_t));
+      new_command->commandType = commandType;
+
       _AddCommand(&gAwaitingReturnQueue, new_command);
     }
     break;    
@@ -659,6 +693,7 @@ int RadioNetworkGetReturnData(void* buffer)
   RadioCommand *command = _RetrieveCommand(&gAwaitingReturnQueue);
   if (command != NULL)
   {
+    zlog_debug(gZlogCategories[ZLOG_COMMAND], "processing command for return data");
     switch (command->commandType)
     {
       case CmdSetSingleSwitch:

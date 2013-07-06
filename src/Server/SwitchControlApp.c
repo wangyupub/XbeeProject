@@ -17,10 +17,39 @@
 #include "RadioNetwork.h"
 
 AppConfig gAppConfig;
+static int gActiveSocketId = 0;
+static pthread_rwlock_t	socketIdLock;
+
+void _SocketIdInit()
+{
+  /* for now, use default config for read write lockers*/
+  pthread_rwlock_init(&socketIdLock, NULL);
+  gActiveSocketId = 0;
+  
+}
+
+void _SocketIdDestroy()
+{
+  gActiveSocketId = 0;
+  pthread_rwlock_destroy(&socketIdLock);
+}
+
+void _SetSocketId(int sid)
+{
+  /* entering critical zone */
+  int err = pthread_rwlock_wrlock(&socketIdLock);
+  if (err != 0) zlog_fatal(gZlogCategories[ZLOG_MAIN], "_SetSocketId fail to acquire lock");
+  
+  gActiveSocketId = sid;
+  
+  /* leaving critical zone */
+  err = pthread_rwlock_unlock(&socketIdLock);
+  if (err != 0) zlog_fatal(gZlogCategories[ZLOG_MAIN], "_SetSocketId fail to release lock");
+}
 
 void SSECallback(int sid, SocketServerEvent event, void* data, int data_len)
 {
-  zlog_debug(gZlogCategories[ZLOG_MAIN], "SSECallback is called %d\n", event);
+  zlog_debug(gZlogCategories[ZLOG_MAIN], "SSECallback is called %d", event);
   
   switch (event)
   {
@@ -32,16 +61,40 @@ void SSECallback(int sid, SocketServerEvent event, void* data, int data_len)
 	char response[256];
 	memset(response, 0, sizeof(response));
 	
-	snprintf(response, sizeof(response), "received data: [%s]\n", (char*) data);
+	snprintf(response, sizeof(response), "received data: [%s]", (char*) data);
 	
 	SocketServerSend(sid, response, strlen(response));
 
 	int d = strncmp("exit", (char*)data, 4);
 	if (d == 0) exit(0);
 #endif //0
+
+//#define DEBUG 1
+#if defined(DEBUG)
+	int i;
+	char* buf_str = (char*) malloc (3*data_len + 2);
+	char* buf_ptr = buf_str;
+	unsigned char* str = (unsigned char*) data;
+	for (i = 0; i < data_len; i++)
+	{
+	    buf_ptr += sprintf(buf_ptr, "|%2X", str[i]);
+	}
+	sprintf(buf_ptr,"|\0");
+	zlog_debug(gZlogCategories[ZLOG_SOCKET], "Receiving %d bytes of data [%s]", data_len, buf_str);
+
+#endif //defined(DEBUG)	
 	ParseCommand(data, data_len);
-	
       }
+    }
+    break;
+    case SSE_CONNECT:
+    {
+      _SetSocketId(sid);
+    }
+    break;
+    case SSE_DISCONNECT:
+    {
+      _SetSocketId(0);
     }
     break;
     default:
@@ -49,10 +102,11 @@ void SSECallback(int sid, SocketServerEvent event, void* data, int data_len)
   }
 }
 
-void UpdateReturnData(int sid)
+void UpdateReturnData()
 {
 /* pool size of the return data */
 #define RETURN_DATA_POOL_SIZE 16
+  
   
   unsigned char buffer[RETURN_DATA_POOL_SIZE];
 
@@ -60,7 +114,28 @@ void UpdateReturnData(int sid)
   int size = RadioNetworkGetReturnData(buffer);
   if (size > 0)
   {
-    SocketServerSend(sid, buffer, size);
+    zlog_debug(gZlogCategories[ZLOG_MAIN], "UpdateReturnData setting return data size -> %d", size);
+    /* entering critical zone */
+    int err = pthread_rwlock_rdlock(&socketIdLock);
+    if (err != 0) zlog_fatal(gZlogCategories[ZLOG_MAIN], "UpdateReturnData fail to acquire lock");
+
+    /**
+     * locking the socket id does not prevent client from disconnecting, so this may still fail.
+     * so, the right way to do this may be storing the socket id in the command, do not send if
+     * socket id does not match. */
+    if (gActiveSocketId != 0)
+    {
+      zlog_debug(gZlogCategories[ZLOG_MAIN], "Sending return data to sid [%d]", gActiveSocketId);
+      int err = SocketServerSend(gActiveSocketId, buffer, size);
+      zlog_debug(gZlogCategories[ZLOG_MAIN], "send error code [%d]", err);
+      if (err != size)
+      {
+	zlog_warn(gZlogCategories[ZLOG_MAIN], "return data sent unsuccessfully");
+      }
+    }
+    /* leaving critical zone */
+    err = pthread_rwlock_unlock(&socketIdLock);
+    if (err != 0) zlog_fatal(gZlogCategories[ZLOG_MAIN], "UpdateReturnData fail to release lock");
   }
   
 }
@@ -93,7 +168,6 @@ int main(void)
   /* Initializes SocketServer */
   SocketServerConfig config;
   config.eventHandler = SSECallback;
-  config.customUpdate = UpdateReturnData;
   config.port = gAppConfig.uServerPort;
 
   zlog_info(gZlogCategories[ZLOG_MAIN], "Initializing SocketServer on port %d\n", config.port);
@@ -105,8 +179,10 @@ int main(void)
   /* Initializes Radio Network */
   RadioNetworkInit(&gAppConfig.radioNetworkConfig);
   
+  _SocketIdInit();
+  
   /* Initializes command processing thread with default settings */
-  pthread_create(&command_processor_pid, NULL, &RadioNetworkProcessCommandQueue, NULL);
+  pthread_create(&command_processor_pid, NULL, &RadioNetworkProcessCommandQueue, UpdateReturnData);
   
   SocketServerStart();
   SocketServerRun();
@@ -114,6 +190,8 @@ int main(void)
   /* Wait to join the command processing thread */
   pthread_join(command_processor_pid, NULL);
 
+  _SocketIdDestroy();
+  
   SocketServerStop();
   SocketServerDestroy();
 

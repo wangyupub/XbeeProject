@@ -133,6 +133,7 @@ int XBeeRadioSend(const unsigned char* data, int len)
   {
     return 0;
   }
+  zlog_debug(gZlogCategories[ZLOG_XBEE], "XBeeRadioSend %d bytes data [%s]\n", len, data);
 }
 
 int XBeeRadioReceive(void *buffer, int bufferSize, int wait, int* dataLen)
@@ -152,7 +153,7 @@ int XBeeRadioReceive(void *buffer, int bufferSize, int wait, int* dataLen)
   
   if (ret == XBEE_EINVAL)
   {
-    zlog_warn(gZlogCategories[ZLOG_XBEE],  "XBeeRadioReceive: Calling xbee_conRx / xbee_conRxWait while a callback is set\n");
+    zlog_warn(gZlogCategories[ZLOG_XBEE],  "XBeeRadioReceive: Calling xbee_conRx / xbee_conRx Wait while a callback is set\n");
   }
   else if (ret == XBEE_ENOTEXISTS)
   {

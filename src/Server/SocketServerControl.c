@@ -15,7 +15,6 @@ struct addrinfo *servinfo;  /* will point to the results */
 int socketfd;
 int new_fd;
 SocketServerEventHandler gSocketServerHandler;
-SocketServerCustomUpdate gSocketServerCustomUpdate;
 
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
@@ -40,8 +39,6 @@ int SocketServerInit(SocketServerConfig* config)
 
   gSocketServerHandler = config->eventHandler;
   snprintf(port, sizeof(port), "%d", config->port);
-  
-  gSocketServerCustomUpdate = config->customUpdate;
   
   if ((status = getaddrinfo(NULL, port, &hints, &servinfo)) != 0)
   {
@@ -135,7 +132,7 @@ int SocketServerRun()
     {
       SocketServerStop();
       inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr *)&their_addr), s, sizeof s);
-      zlog_info(gZlogCategories[ZLOG_SOCKET], "server: got connection from %s\n", s);
+      zlog_info(gZlogCategories[ZLOG_SOCKET], "server: got connection from %s", s);
   
       if (gSocketServerHandler != NULL)
       {
@@ -165,9 +162,7 @@ int SocketServerRun()
 	  }
 	  SocketServerStart();
 	  break;
-	}
-	
-	if (gSocketServerCustomUpdate != NULL) gSocketServerCustomUpdate(new_fd);
+	}	
       }
     }
   }
