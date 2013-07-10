@@ -27,6 +27,10 @@ public class PassThroughCommand extends AbstractCommand {
 		}
 	}
 	
+	public PassThroughCommand(com.truthfulgiant.xbeeswitchcontrol.protocol.generated.PassThroughCommand c) {
+		this(c.getData());
+	}
+	
 	protected void AppendParam(byte[] byteArray) {
 		AppendParam((byte) byteArray.length);
 		for (byte b : byteArray) {

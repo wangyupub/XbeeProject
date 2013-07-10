@@ -18,6 +18,14 @@ public class CompositeCommand extends AbstractCommand {
 		super(CommandType.MULTIPLE_COMMAND_PACK);
 	}
 	
+	CompositeCommand(com.truthfulgiant.xbeeswitchcontrol.protocol.generated.CompositeCommand c){
+		this();
+		
+		for (com.truthfulgiant.xbeeswitchcontrol.protocol.generated.AbstractCommand command : c.getCommands().getCommand()) {
+			AddCommand(CommandFactory.CreateCommand(command));
+		}
+	}
+	
 	@Override
 	public int AddCommand(AbstractCommand c) {
 		// composite command cannot be added again

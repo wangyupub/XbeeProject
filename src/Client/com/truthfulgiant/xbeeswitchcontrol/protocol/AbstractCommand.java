@@ -13,8 +13,8 @@ class CommandType {
 	
 	public static final byte COMMAND_SET_SINGLE_SWITCH = (byte) 0xC1;
 	public static final byte COMMAND_GET_SINGLE_SWITCH = (byte) 0xC2;
-	public static final byte COMMAND_SET_MULTIPLE_SWITCH = (byte) 0xC3;
-	public static final byte COMMAND_GET_MULTIPLE_SWITCH = (byte) 0xC4;
+	public static final byte COMMAND_SET_MULTIPLE_SWITCHES = (byte) 0xC3;
+	public static final byte COMMAND_GET_MULTIPLE_SWITCHES = (byte) 0xC4;
 	public static final byte COMMAND_GET_NUM_SWITCHES = (byte) 0xC5;
 	public static final byte COMMAND_SET_SINGLE_SWITCH_DELAY = (byte) 0xC6;
 	public static final byte COMMAND_PASS_THROUGH = (byte) 0xC7;
@@ -35,6 +35,10 @@ class CommandType {
  *
  */
 public abstract class AbstractCommand {
+	
+	AbstractCommand() {
+		this(CommandType.COMMAND_INVALID);
+	}
 	
 	AbstractCommand(Byte type) {
 		this.commandType = type;

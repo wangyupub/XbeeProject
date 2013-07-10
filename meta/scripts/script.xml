@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSpy v2013 rel. 2 sp2 (http://www.altova.com) by Yu Wang (NA) -->
+<CommandTestScript xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="command_script.xsd" CommandDelayInterval="4">
+	<Commands>
+		<Command xsi:type="SetSingleSwitchCommand">
+			<SwitchIndex>2</SwitchIndex>
+			<SwitchStatus>1</SwitchStatus>
+		</Command>
+		<Command xsi:type="SetSingleSwitchCommand">
+			<SwitchIndex>2</SwitchIndex>
+			<SwitchStatus>0</SwitchStatus>
+		</Command>
+		<Command xsi:type="PassThroughCommand">
+			<Data>0x39</Data>
+		</Command>
+	</Commands>
+</CommandTestScript>

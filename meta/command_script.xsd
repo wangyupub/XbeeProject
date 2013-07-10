@@ -1,0 +1,100 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSpy v2013 rel. 2 sp2 (http://www.altova.com) by Yu Wang (Truthful Giant) -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:jxb="http://java.sun.com/xml/ns/jaxb" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:element name="CommandTestScript">
+		<xs:annotation>
+			<xs:documentation>Test Script Format to Automate Testing of Commands</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="Commands">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="Command" type="AbstractCommand" maxOccurs="unbounded"/>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+			<xs:attribute name="CommandDelayInterval" type="xs:unsignedInt" use="required"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:complexType name="AbstractCommand" abstract="true"/>
+	<xs:complexType name="SetSingleSwitchCommand">
+		<xs:complexContent>
+			<xs:extension base="AbstractCommand">
+				<xs:sequence>
+					<xs:element name="SwitchIndex" type="xs:unsignedShort"/>
+					<xs:element name="SwitchStatus" type="xs:unsignedByte"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="GetSingleSwitchCommand">
+		<xs:complexContent>
+			<xs:extension base="AbstractCommand">
+				<xs:sequence>
+					<xs:element name="SwitchIndex" type="xs:unsignedShort"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="SetMultipleSwitchesCommand">
+		<xs:complexContent>
+			<xs:extension base="AbstractCommand">
+				<xs:sequence>
+					<xs:element name="SwitchOffset" type="xs:unsignedShort"/>
+					<xs:element name="SwitchBitMask" type="xs:unsignedLong"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="GetMultipleSwitchesCommand">
+		<xs:complexContent>
+			<xs:extension base="AbstractCommand">
+				<xs:sequence>
+					<xs:element name="SwitchOffset" type="xs:unsignedShort"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="GetNumSwitchesCommand">
+		<xs:complexContent>
+			<xs:extension base="AbstractCommand"/>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="SetSingleSwitchDelayCommand">
+		<xs:complexContent>
+			<xs:extension base="AbstractCommand">
+				<xs:sequence>
+					<xs:element name="SwitchIndex" type="xs:unsignedShort"/>
+					<xs:element name="SwitchStatus" type="xs:unsignedByte"/>
+					<xs:element name="Delay" type="xs:unsignedShort"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="PassThroughCommand">
+		<xs:complexContent>
+			<xs:extension base="AbstractCommand">
+				<xs:sequence>
+					<xs:element name="Data" type="xs:base64Binary"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="CompositeCommand">
+		<xs:complexContent>
+			<xs:extension base="AbstractCommand">
+				<xs:sequence>
+					<xs:element name="Commands">
+						<xs:complexType>
+							<xs:sequence>
+								<xs:element name="Command" type="AbstractCommand" maxOccurs="unbounded"/>
+							</xs:sequence>
+						</xs:complexType>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+</xs:schema>

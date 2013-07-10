@@ -20,4 +20,8 @@ public class SetSingleSwitchCommand extends AbstractCommand {
 		AppendParam(switchIndex);
 		AppendParam(switchStatus);
 	}
+	
+	public SetSingleSwitchCommand(com.truthfulgiant.xbeeswitchcontrol.protocol.generated.SetSingleSwitchCommand c) {
+		this((short) c.getSwitchIndex(), (byte) c.getSwitchStatus());
+	}
 }
