@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSpy v2013 rel. 2 sp2 (http://www.altova.com) by Yu Wang (NA) -->
+<CommandTestScript xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="command_script.xsd" CommandDelayInterval="0">
+	<Commands>
+<Command xsi:type="CompositeCommand">
+<Commands>
+		<Command xsi:type="PassThroughCommand">
+			<Data>ZA==</Data>
+		</Command>
+		<Command xsi:type="PassThroughCommand">
+			<Data>bg==</Data>
+		</Command>
+		<Command xsi:type="SetMultipleSwitchesCommand">
+			<SwitchOffset>0</SwitchOffset>
+			<SwitchBitMask>12297078782535139328</SwitchBitMask>
+		</Command>
+		</Commands>
+		</Command>
+  </Commands>
+</CommandTestScript>

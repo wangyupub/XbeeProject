@@ -36,10 +36,6 @@ class CommandType {
  */
 public abstract class AbstractCommand {
 	
-	AbstractCommand() {
-		this(CommandType.COMMAND_INVALID);
-	}
-	
 	AbstractCommand(Byte type) {
 		this.commandType = type;
 		

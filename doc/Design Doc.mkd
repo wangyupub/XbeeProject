@@ -159,7 +159,7 @@ Param 1: SwitchOffset (2 bytes)
 
 Param 2: SwitchBitMask (8 bytes) up to 64 switches
 
-Total (10 bytes)
+Total (11 bytes)
 
 Server returns Success/ Fail state (SwitchBitMask 8 bytes)
 

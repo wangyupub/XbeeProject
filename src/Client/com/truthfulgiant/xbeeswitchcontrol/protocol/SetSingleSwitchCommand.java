@@ -11,7 +11,7 @@ package com.truthfulgiant.xbeeswitchcontrol.protocol;
 public class SetSingleSwitchCommand extends AbstractCommand {
 
 	public SetSingleSwitchCommand() {
-		super(CommandType.COMMAND_GET_SINGLE_SWITCH);
+		super(CommandType.COMMAND_SET_SINGLE_SWITCH);
 	}
 	
 	public SetSingleSwitchCommand(short switchIndex, byte switchStatus) {

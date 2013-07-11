@@ -34,7 +34,7 @@ uint32_t _GetParamInt32(void *data)
 
 uint64_t _GetParamInt64(void *data)
 {
-  return *((uint64_t*) data);
+  return htobe64(*((uint64_t*) data));
 }
 
 /* parse the received data into command, to be called by SocketServerControl */
@@ -58,6 +58,7 @@ int ParseCommand(void *data, int dataLength)
     {
       command_type_t type = _GetParamChar8(pointer);
       ParseCommand(pointer, GetCommandLength(pointer));
+      pointer += GetCommandLength(pointer);
     }
   }
   else
@@ -177,7 +178,7 @@ int GetCommandLength(void *commandBuffer)
 	toRet = 3;
 	break;
       case CmdSetMultipleSwitches:
-	toRet = 10;
+	toRet = 11;
 	break;
       case CmdGetMultipleSwitches:
 	toRet = 2;
@@ -186,7 +187,7 @@ int GetCommandLength(void *commandBuffer)
 	toRet = 1;
 	break;
       case CmdSetSingleSwitchDelay:
-	toRet = 5;
+	toRet = 6;
 	break;
       case CmdPassThrough:
 	toRet = 2 + (int)(*(buffer + 1));

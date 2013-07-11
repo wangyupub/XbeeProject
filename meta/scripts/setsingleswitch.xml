@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSpy v2013 rel. 2 sp2 (http://www.altova.com) by Yu Wang (NA) -->
+<CommandTestScript xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="command_script.xsd" CommandDelayInterval="1">
+	<Commands>
+		<Command xsi:type="PassThroughCommand">
+			<Data>ZA==</Data>
+		</Command>
+		<Command xsi:type="GetSingleSwitchCommand">
+			<SwitchIndex>1</SwitchIndex>
+		</Command>
+		<Command xsi:type="PassThroughCommand">
+			<Data>bg==</Data>
+		</Command>
+		<Command xsi:type="SetSingleSwitchCommand">
+			<SwitchIndex>1</SwitchIndex>
+			<SwitchStatus>1</SwitchStatus>
+		</Command>
+		<Command xsi:type="SetSingleSwitchCommand">
+			<SwitchIndex>1</SwitchIndex>
+			<SwitchStatus>0</SwitchStatus>
+		</Command>
+		<Command xsi:type="SetSingleSwitchCommand">
+			<SwitchIndex>3</SwitchIndex>
+			<SwitchStatus>1</SwitchStatus>
+		</Command>
+		<Command xsi:type="SetSingleSwitchCommand">
+			<SwitchIndex>3</SwitchIndex>
+			<SwitchStatus>0</SwitchStatus>
+		</Command>
+		<Command xsi:type="SetSingleSwitchCommand">
+			<SwitchIndex>2</SwitchIndex>
+			<SwitchStatus>1</SwitchStatus>
+		</Command>
+		<Command xsi:type="SetSingleSwitchCommand">
+			<SwitchIndex>2</SwitchIndex>
+			<SwitchStatus>0</SwitchStatus>
+		</Command>
+	</Commands>
+</CommandTestScript>

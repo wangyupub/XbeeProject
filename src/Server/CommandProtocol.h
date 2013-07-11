@@ -28,7 +28,7 @@
 
 #define MultipleCommandHeader 0xAC	/* 1010_1100 */
 
-#define IS_COMMAND_PACK(c) (~c & MultipleCommandHeader == 0)
+#define IS_COMMAND_PACK(c) ((~c & MultipleCommandHeader) == 0)
 
 typedef unsigned char command_type_t;
 

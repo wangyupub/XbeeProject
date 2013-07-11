@@ -3,6 +3,7 @@
  */
 package com.truthfulgiant.xbeeswitchcontrol.protocol;
 
+import java.nio.ByteBuffer;
 import java.util.Vector;
 
 /**
@@ -20,7 +21,7 @@ public class CompositeCommand extends AbstractCommand {
 	
 	CompositeCommand(com.truthfulgiant.xbeeswitchcontrol.protocol.generated.CompositeCommand c){
 		this();
-		
+		commands = new Vector<AbstractCommand>(16);
 		for (com.truthfulgiant.xbeeswitchcontrol.protocol.generated.AbstractCommand command : c.getCommands().getCommand()) {
 			AddCommand(CommandFactory.CreateCommand(command));
 		}
@@ -45,14 +46,25 @@ public class CompositeCommand extends AbstractCommand {
 	
 	@Override
 	public void BuildByteBuffer() {
-		buffer.clear();
 		
-		buffer.put(GetCommandType());
-		buffer.put((byte) commands.size());		
+		ByteBuffer tempBuffer=ByteBuffer.allocate(1024);
+		int bufferSize = 0;
+		// put command type first
+		tempBuffer.put(GetCommandType());
+		bufferSize +=  Byte.SIZE / Byte.SIZE;
+
+		tempBuffer.put((byte) commands.size());		
+		bufferSize +=  Byte.SIZE / Byte.SIZE;
+
 		for (AbstractCommand c : commands) {
 			c.BuildByteBuffer();
-			buffer.put(c.GetByteArray());
+			tempBuffer.put(c.GetByteArray());
+			bufferSize +=  c.GetByteArray().length;
 		}
+		buffer = ByteBuffer.allocate(bufferSize);
+		buffer.put(tempBuffer.array(), 0, bufferSize);
+		
+		System.out.println("Build Command Byte (" + bufferSize + " bytes):" + buffer.asCharBuffer());
 	}
 	
 	Vector<AbstractCommand> commands;

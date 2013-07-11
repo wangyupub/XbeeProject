@@ -14,7 +14,6 @@ public class PassThroughCommand extends AbstractCommand {
 	
 	public PassThroughCommand(byte[] data) {
 		this();
-		AppendParam((byte) data.length);
 		AppendParam(data);
 	}
 	

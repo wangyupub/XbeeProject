@@ -15,6 +15,7 @@
 #include <assert.h>
 #include <pthread.h>
 #include <arpa/inet.h>
+#include <inttypes.h>
 
 #include "Util.h"
 #include "RadioNetwork.h"
@@ -27,7 +28,7 @@
  * 
  ******************************************************************/
 
-typedef void(*fpointer)();
+typedef int(*fpointer)();
 
 typedef struct
 {
@@ -210,22 +211,33 @@ int _ProcessCommand(RadioCommand* pCommand)
   memset(buffer, 0, RETURN_DATA_POOL_SIZE);
   
   /* always wait for XBee radio to return now, since right now XBee does not keep multiple connections */
-  ret = XBeeRadioReceive(buffer, RETURN_DATA_POOL_SIZE, 0, &dataLen);
+  ret = XBeeRadioReceive(buffer, RETURN_DATA_POOL_SIZE, 1, &dataLen);
 
   if (ret == 0)
   {
+    zlog_debug(gZlogCategories[ZLOG_COMMAND], "[%d] bytes data returned: %s", dataLen, (char*) buffer);
+    
     /* sets up the return data */
     _SetReturnData(pCommand, buffer, dataLen);
     
     /* puts into queue waiting for return data process */
     _AddCommand(&gAwaitingReturnQueue, pCommand);
   }
-  else
+  /* broadcasted data does not return */
+  else if (pCommand->commandType == CmdPassThrough)
   {
     unsigned char success = 0;
     _SetReturnData(pCommand, &success, sizeof(success));
     _AddCommand(&gAwaitingReturnQueue, pCommand);
     
+  }
+  else
+  {
+    zlog_warn(gZlogCategories[ZLOG_COMMAND], "No data is returned for commandType [%x]", pCommand->commandType);
+
+    unsigned char success = 0;
+    _SetReturnData(pCommand, &success, sizeof(success));
+    _AddCommand(&gAwaitingReturnQueue, pCommand);    
   }
   /* todo: resend goes here if needed. */
 #endif //defined(USE_XBEE_CALLBACK)  
@@ -280,11 +292,11 @@ void _xbeeCB(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt, voi
     if ((*pkt)->data[0] == '@')
     {
       xbee_conCallbackSet(con, NULL, NULL);
-      zlog_debug(gZlogCategories[ZLOG_COMMAND], "*** DISABLED CALLBACK... ***\n");
+      zlog_debug(gZlogCategories[ZLOG_COMMAND], "*** DISABLED CALLBACK... ***");
     }
     zlog_debug(gZlogCategories[ZLOG_COMMAND], "rx: [%s]\n", (*pkt)->data);
   }
-  zlog_debug(gZlogCategories[ZLOG_COMMAND], "tx: %d\n", xbee_conTx(con, NULL, "Hello\r\n"));
+  zlog_debug(gZlogCategories[ZLOG_COMMAND], "tx: %d", xbee_conTx(con, NULL, "Hello\r\n"));
 }
 #endif /* USE_XBEE_CALLBACK */
 
@@ -345,13 +357,17 @@ void* RadioNetworkProcessCommandQueue(void *arg)
     }
     else
     {
+      int processedDataSize = 0;
       if (arg != NULL)
       {
 	fpointer func = (fpointer) arg;
-	func();
+	processedDataSize = func();
       }
-      /* sleep for 1 sec */
-      sleep(1);
+      if (processedDataSize == 0)
+      {
+	/* sleep for 1 sec */
+	sleep(1);
+      }
     }
   }
   return NULL;
@@ -375,7 +391,7 @@ void RadioNetworkDestroy()
  ********************************************************************************/
 int _FillCommand(RadioCommand* command, int switchIndex, int switchStatus)
 {
-  const char command_table[] = { 'e', 'f', 'g', 'h', 'o', 'p', 'q', 'r' };
+  const char command_table[] = { 'o', 'p', 'q', 'r', 'e', 'f', 'g', 'h' };
   
   assert(command != NULL);
   memset(command, 0, sizeof(command));
@@ -384,7 +400,7 @@ int _FillCommand(RadioCommand* command, int switchIndex, int switchStatus)
   
   if (endPointIndex >= g_radio_network_spec.endpoint_count)
   {
-    zlog_fatal(gZlogCategories[ZLOG_COMMAND], "_FillCommand: Requested switch index [%d] over limit.\n", switchIndex);
+    zlog_fatal(gZlogCategories[ZLOG_COMMAND], "_FillCommand: Requested switch index [%d] over limit.", switchIndex);
     return 1;
   }
   /* Sets up the xbee address */
@@ -439,7 +455,7 @@ int _FillCommandA(RadioCommand* command, int endPointIndex, void* data, int data
 
   if (endPointIndex >= g_radio_network_spec.endpoint_count)
   {
-    zlog_fatal(gZlogCategories[ZLOG_COMMAND], "_FillCommand: Requested switch index [%d] over limit.\n", endPointIndex);
+    zlog_fatal(gZlogCategories[ZLOG_COMMAND], "_FillCommand: Requested switch index [%d] over limit.", endPointIndex);
     return 1;
   }
   
@@ -493,10 +509,12 @@ void RadioNetworkAppendCommand(command_type_t commandType, ...)
       assert(new_command != NULL);
       
       _FillCommand(new_command, switchIndex, switchStatus);
-      /* add delay period */
+
       new_command->commandType = commandType;
-      new_command->triggerTime = commandType;
+
+      /* add delay period */
       new_command->triggerTime += delay;
+
       _AddCommand(&gCommandQueue, new_command);
       
     }
@@ -509,9 +527,12 @@ void RadioNetworkAppendCommand(command_type_t commandType, ...)
 //      switchMask[1] = va_arg(params, int);
       uint64_t switchMask = va_arg(params, uint64_t);
       
-      int i = 0;
-      uint64_t mask = 1;
+      zlog_debug(gZlogCategories[ZLOG_COMMAND], "Multiple: index[%d] mask[%" PRIX64 " |%" PRIu64 "]", switchOffset, switchMask, switchMask);
       
+      int i = 0;
+      /* sets the highest bit */
+      uint64_t mask = (uint64_t) -1 - (uint64_t) -1 / 2;
+
       const int total_switch_count = g_radio_network_spec.endpoint_count * g_radio_network_spec.switch_count;
       
       /******************************************************************************
@@ -527,19 +548,22 @@ void RadioNetworkAppendCommand(command_type_t commandType, ...)
 	if (switchIndex >= total_switch_count)
 	  break;
 	
+	zlog_debug(gZlogCategories[ZLOG_COMMAND], "index %d mask[%" PRIX64 " |%" PRIu64 "]", i, mask, mask);
+	
 	new_command = malloc(sizeof(RadioCommand));
 	assert(new_command != NULL);
-	int switchStatus = mask & switchMask;
+	int switchStatus = ((mask & switchMask) != 0);
 	
+	zlog_debug(gZlogCategories[ZLOG_COMMAND], "Filling Command %d switch -> %d", switchIndex, switchStatus);
 	_FillCommand(new_command, switchIndex, switchStatus);
 
+
 	/* sets up command type for collecting the return data. */
-	new_command->triggerTime = commandType;
 	new_command->commandType = commandType;
 	
 	_AddCommand(&gCommandQueue, new_command);
 	
-	mask = mask << 1;
+	mask = mask >> 1;
       }
     }
     break;
@@ -610,7 +634,7 @@ void RadioNetworkAppendCommand(command_type_t commandType, ...)
     {
       const char* msg = "not supported\n";
 //      _SetReturnData(msg, sizeof(msg));
-      zlog_warn(gZlogCategories[ZLOG_COMMAND], "Command GetMultipleSwitches not yet supported.\n");
+      zlog_warn(gZlogCategories[ZLOG_COMMAND], "Command GetMultipleSwitches not yet supported.");
     }
     break;
     case CmdGetNumSwitches:
@@ -700,23 +724,23 @@ int RadioNetworkGetReturnData(void* buffer)
       case CmdSetSingleSwitchDelay:
       {
 	/* always return success for SetSingle commands */
-	char success = 1;
+	char success = 0;
 	size = sizeof(char);
 	memcpy(buffer, &success, size);
       }
       break;
       case CmdSetMultipleSwitches:
       {
-	char success = 1;
+	char success = 0;
 	size = sizeof(char);
 	memcpy(buffer, &success, size);
-	zlog_warn(gZlogCategories[ZLOG_COMMAND], "CmdSetMultipleSwitches only returns success now\n");
+	zlog_warn(gZlogCategories[ZLOG_COMMAND], "CmdSetMultipleSwitches only returns success now");
       }
       break;
       case CmdPassThrough:
       {
 	/* always return success for PassThrough commands */
-	char success = 1;
+	char success = 0;
 	size = sizeof(char);
 	memcpy(buffer, &success, size);
       }
@@ -732,12 +756,13 @@ int RadioNetworkGetReturnData(void* buffer)
       break;
       case CmdGetMultipleSwitches:
       {
-	zlog_warn(gZlogCategories[ZLOG_COMMAND], "CmdGetMultipleSwitches does not handle return data now\n");
+	zlog_warn(gZlogCategories[ZLOG_COMMAND], "CmdGetMultipleSwitches does not handle return data now");
       }
       break;
       case CmdGetNumSwitches:
       {
 	memcpy(buffer, command->toRet, command->retSize);
+	size = command->retSize;
       }
       break;    
       default:

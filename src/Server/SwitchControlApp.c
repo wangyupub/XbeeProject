@@ -102,7 +102,7 @@ void SSECallback(int sid, SocketServerEvent event, void* data, int data_len)
   }
 }
 
-void UpdateReturnData()
+int UpdateReturnData()
 {
 /* pool size of the return data */
 #define RETURN_DATA_POOL_SIZE 16
@@ -137,6 +137,7 @@ void UpdateReturnData()
     err = pthread_rwlock_unlock(&socketIdLock);
     if (err != 0) zlog_fatal(gZlogCategories[ZLOG_MAIN], "UpdateReturnData fail to release lock");
   }
+  return size;
   
 }
 
