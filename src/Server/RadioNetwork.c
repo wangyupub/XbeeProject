@@ -266,6 +266,7 @@ void _convertXBeeAddress(uint32_t* addressBuffer, struct xbee_conAddress* xbeeAd
 
   memcpy((void*) xbeeAddress->addr64, (void*) address, sizeof(xbeeAddress->addr64));
 
+  
   /*
   for (i = 0; i < 8; ++i)
   {
@@ -325,7 +326,7 @@ void RadioNetworkInit(RadioNetworkConfig* config)
   {
     assert(pBuffer != NULL);
     _convertXBeeAddress(pBuffer, &g_radio_network_spec.endpoint_address_list[i]);
-    
+
     /* move the pointer forward by 2 * 32 bits */
     pBuffer += 2;
   }
@@ -403,6 +404,7 @@ int _FillCommand(RadioCommand* command, int switchIndex, int switchStatus)
     zlog_fatal(gZlogCategories[ZLOG_COMMAND], "_FillCommand: Requested switch index [%d] over limit.", switchIndex);
     return 1;
   }
+
   /* Sets up the xbee address */
   memcpy(&command->config.address, &g_radio_network_spec.endpoint_address_list[endPointIndex], sizeof(struct xbee_conAddress));
   
@@ -501,6 +503,8 @@ void RadioNetworkAppendCommand(command_type_t commandType, ...)
       int delay = 0;
       int switchIndex = va_arg(params, int);
       int switchStatus = va_arg(params, int);
+      
+      zlog_debug(gZlogCategories[ZLOG_COMMAND], "switchIndex[%d] switchStatus[%d]", switchIndex, switchStatus);
       
       if (commandType == CmdSetSingleSwitchDelay)
 	delay = va_arg(params, int);

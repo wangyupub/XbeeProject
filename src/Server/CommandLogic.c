@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include <arpa/inet.h>
+#include <inttypes.h>
 
 #include "Util.h"
 
@@ -24,17 +25,45 @@ unsigned char _GetParamChar8(void *data)
 
 uint16_t _GetParamInt16(void* data)
 {
-  return ntohs(*((uint16_t*) data));
+  unsigned char* pointer = (unsigned char*) data;
+  uint16_t toRet = 0;
+  int i = sizeof(uint16_t) / sizeof(char);
+  for (; i > 0; --i)
+  {
+    toRet = (toRet << 8) | _GetParamChar8(pointer++);
+    zlog_debug(gZlogCategories[ZLOG_COMMAND], "toRet [%x] - i [%d]", toRet, i);
+  }
+
+  return toRet;
+//  return ntohs(toRet);
 }
 
 uint32_t _GetParamInt32(void *data)
 {
-  return ntohl(*((uint32_t*) data));
+  unsigned char* pointer = (unsigned char*) data;
+  uint32_t toRet = 0;
+  int i = sizeof(uint32_t) / sizeof(char);
+  for (; i > 0; --i)
+  {
+    toRet = (toRet << 8) | _GetParamChar8(pointer++);
+    zlog_debug(gZlogCategories[ZLOG_COMMAND], "toRet [%x] - i [%d]", toRet, i);
+  }
+  return toRet;
+//  return ntohl(toRet);
 }
 
 uint64_t _GetParamInt64(void *data)
 {
-  return htobe64(*((uint64_t*) data));
+  unsigned char* pointer = (unsigned char*) data;
+  uint64_t toRet = 0;
+  int i = sizeof(uint64_t) / sizeof(char);
+  for (; i > 0; --i)
+  {
+    toRet = (toRet << 8) | _GetParamChar8(pointer++);
+    zlog_debug(gZlogCategories[ZLOG_COMMAND], "toRet [%" PRIX64 " - i [%d]", toRet, i);
+  }
+  return toRet;
+//  return htobe64(toRet);
 }
 
 /* parse the received data into command, to be called by SocketServerControl */
@@ -70,6 +99,8 @@ int ParseCommand(void *data, int dataLength)
 	uint16_t switchIndex = _GetParamInt16(pointer);
 	pointer += 2;
 	unsigned char switchStatus = _GetParamChar8(pointer);
+	
+	zlog_debug(gZlogCategories[ZLOG_COMMAND], "CmdSetSingleSwitch switchIndex [%x] switchStatus [%x]", switchIndex, switchStatus);
 	
 	RadioNetworkAppendCommand(commandType, switchIndex, switchStatus);	
       }
@@ -111,6 +142,9 @@ int ParseCommand(void *data, int dataLength)
 	++pointer;
 	uint16_t delay = _GetParamInt16(pointer);
 	
+	zlog_debug(gZlogCategories[ZLOG_COMMAND], "CmdSetSingleSwitchDelay switchIndex [%x] switchStatus [%x], delay [%x]",
+		   switchIndex, switchStatus, delay);
+
 	RadioNetworkAppendCommand(commandType, switchIndex, switchStatus, delay);
       }
       break;

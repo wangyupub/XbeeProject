@@ -72,6 +72,10 @@ int XBeeRadioConnect(XBeeConnectionConfig* connectionConfig)
   if ((ret = xbee_conNew(xbee, &con,
     connectionConfig->connectionType/* "Data" */, &connectionConfig->address)) != XBEE_ENONE)
   {
+    zlog_fatal(gZlogCategories[ZLOG_XBEE], "connectionType[%s]", connectionConfig->connectionType);
+    zlog_fatal(gZlogCategories[ZLOG_XBEE], "addres[%p]", &connectionConfig->address);
+    zlog_fatal(gZlogCategories[ZLOG_XBEE], "addr64_enabled[%d]", connectionConfig->address.addr64_enabled);
+    
     xbee_log(xbee, -1, "xbee_conNew() returned: %d (%s)", ret, xbee_errorToStr(ret));
     zlog_fatal(gZlogCategories[ZLOG_XBEE], "xbee_conNew() returned: %d (%s)", ret, xbee_errorToStr(ret));
     return ret;

@@ -50,7 +50,7 @@ public class SwitchControlClient {
 		BufferedReader in = null;
 
 		try {
-			clientSocket = new Socket("127.0.0.1", 3940);
+			clientSocket = new Socket("192.168.1.230", 3940);
 //			out = new PrintWriter(clientSocket.getOutputStream(), true);
 			in = new BufferedReader(new InputStreamReader(
 					clientSocket.getInputStream()));
