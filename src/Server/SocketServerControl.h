@@ -37,7 +37,7 @@ typedef struct
 int SocketServerInit(SocketServerConfig* config);
 
 /* Clean up SocketServer module*/
-int SocketServerShutdown();
+int SocketServerDestroy();
 
 /* Socket Server Start Listening */
 int SocketServerStart();

@@ -188,6 +188,38 @@ void _DestroyQueue(CommandQueue* queue)
   
 }
 
+
+int _SetReturnData(RadioCommand* command, void* data, int size)
+{
+#if 0
+  /* entering critical zone */
+  int err = pthread_rwlock_wrlock(&gCommandQueue.lock);
+  if (err != 0) zlog_fatal(gZlogCategories[ZLOG_COMMAND], "_SetReturnData fail to acquire lock\n");
+
+  int copy_size = size < RETURN_DATA_POOL_SIZE ? size : RETURN_DATA_POOL_SIZE;
+  if (copy_size > 0)
+  {
+    assert(data != NULL);
+    memcpy(gCommandQueue.returnDataPool, data, copy_size);
+  }
+  
+  gCommandQueue.returnDataSize = copy_size;
+
+  /* leaving critical zone */
+  err = pthread_rwlock_unlock(&gCommandQueue.lock);
+  if (err != 0) zlog_fatal(gZlogCategories[ZLOG_COMMAND], "_SetReturnData fail to release lock\n");
+
+  return copy_size;
+#endif //0
+  assert(data != NULL);
+  command->toRet = malloc(size);
+  assert(command->toRet != NULL);
+  memcpy(command->toRet, data, size);
+  command->retSize = size;
+  
+  return 0;
+}
+
 int _ProcessCommand(RadioCommand* pCommand)
 {
   int ret = 0;
@@ -250,7 +282,6 @@ int _ProcessCommand(RadioCommand* pCommand)
 
 void _convertXBeeAddress(uint32_t* addressBuffer, struct xbee_conAddress* xbeeAddress)
 {
-  int i = 0;
   assert(addressBuffer != NULL);
 
   zlog_debug(gZlogCategories[ZLOG_COMMAND],
@@ -322,7 +353,7 @@ void RadioNetworkInit(RadioNetworkConfig* config)
   /* now parse the address buffer to actual XBeeBuffer */
   
   zlog_debug(gZlogCategories[ZLOG_COMMAND], "converting addressBuffer");
-  int* pBuffer = config->addressBuffer;
+  uint32_t* pBuffer = config->addressBuffer;
   for (i = 0; i < g_radio_network_spec.endpoint_count; ++i)
   {
     assert(pBuffer != NULL);
@@ -637,8 +668,6 @@ void RadioNetworkAppendCommand(command_type_t commandType, ...)
     break;
     case CmdGetMultipleSwitches:
     {
-      const char* msg = "not supported\n";
-//      _SetReturnData(msg, sizeof(msg));
       zlog_warn(gZlogCategories[ZLOG_COMMAND], "Command GetMultipleSwitches not yet supported.");
     }
     break;
@@ -663,36 +692,6 @@ void RadioNetworkAppendCommand(command_type_t commandType, ...)
   va_end(params);
 }
 
-int _SetReturnData(RadioCommand* command, void* data, int size)
-{
-#if 0
-  /* entering critical zone */
-  int err = pthread_rwlock_wrlock(&gCommandQueue.lock);
-  if (err != 0) zlog_fatal(gZlogCategories[ZLOG_COMMAND], "_SetReturnData fail to acquire lock\n");
-
-  int copy_size = size < RETURN_DATA_POOL_SIZE ? size : RETURN_DATA_POOL_SIZE;
-  if (copy_size > 0)
-  {
-    assert(data != NULL);
-    memcpy(gCommandQueue.returnDataPool, data, copy_size);
-  }
-  
-  gCommandQueue.returnDataSize = copy_size;
-
-  /* leaving critical zone */
-  err = pthread_rwlock_unlock(&gCommandQueue.lock);
-  if (err != 0) zlog_fatal(gZlogCategories[ZLOG_COMMAND], "_SetReturnData fail to release lock\n");
-
-  return copy_size;
-#endif //0
-  assert(data != NULL);
-  command->toRet = malloc(size);
-  assert(command->toRet != NULL);
-  memcpy(command->toRet, data, size);
-  command->retSize = size;
-  
-  return 0;
-}
 
 /** Assembles return data here. */
 int RadioNetworkGetReturnData(void* buffer)

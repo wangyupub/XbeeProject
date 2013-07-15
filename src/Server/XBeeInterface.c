@@ -17,7 +17,6 @@ struct xbee_conAddress address;
 int XBeeRadioInit(const XBeeRadioConfig* xbeeConfig)
 {
   xbee_err ret;
-  char c;
 
   zlog_debug(gZlogCategories[ZLOG_XBEE], "Setting up XBee at %s as %s w/ rate %d\n", 
      xbeeConfig->szDevicePath, xbeeConfig->szXBeeMode, xbeeConfig->iBaudRate);
@@ -31,7 +30,7 @@ int XBeeRadioInit(const XBeeRadioConfig* xbeeConfig)
 
   xbee_logLevelSet(xbee, 5);
 
-  
+  return ret;
 }
 
 int XBeeRadioDestroy()
@@ -45,7 +44,7 @@ int XBeeRadioDestroy()
   }
 
   xbee_shutdown(xbee);
-
+  return ret;
 }
 
 int XBeeRadioConnect(XBeeConnectionConfig* connectionConfig)
@@ -127,7 +126,7 @@ int XBeeRadioSend(const unsigned char* data, int len)
 {
   xbee_err ret;
   assert(data != NULL);
-  if (ret = xbee_connTx(con, NULL, data, len) != XBEE_ENONE)
+  if ((ret = xbee_connTx(con, NULL, data, len)) != XBEE_ENONE)
   {
     xbee_log(xbee, -1, "xbee_connTx() returned: %s\n", xbee_errorToStr(ret));
     zlog_fatal(gZlogCategories[ZLOG_XBEE],  "xbee_connTx() returned: %d", ret);

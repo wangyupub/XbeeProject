@@ -21,6 +21,12 @@ AppConfig gAppConfig;
 static int gActiveSocketId = 0;
 static pthread_rwlock_t	socketIdLock;
 
+/* Log config file name */
+extern const char* LOG_CONFIG_FILENAME;
+
+/* INI file name */
+extern const char* INI_FILENAME;
+
 void _SocketIdInit()
 {
   /* for now, use default config for read write lockers*/
@@ -157,7 +163,7 @@ int main(void)
   pthread_t command_processor_pid;
   
   /* Initializes zlog first.*/
-  if (error = zLogInit() != 0)
+  if ((error = zLogInit()) != 0)
   {
     return error;
   }

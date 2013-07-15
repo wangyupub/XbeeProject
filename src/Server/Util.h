@@ -70,14 +70,11 @@ typedef struct
 } AppConfig;
 
 
-/* Log config file name */
-static const char* LOG_CONFIG_FILENAME = "zlog.conf";
-
-/* INI file name */
-static const char* INI_FILENAME = "config.ini";
-
 /* Initializes zlog, sets up categories */
 int zLogInit();
+
+/* Destroys zlog */
+int zLogDestroy();
 
 /* Global zlog category pionters */
 zlog_category_t *gZlogCategories[ZLOG_TOTAL];

@@ -85,7 +85,6 @@ int ParseCommand(void *data, int dataLength)
     int i = 0;
     for (i = 0; i < commandCount; ++i)
     {
-      command_type_t type = _GetParamChar8(pointer);
       ParseCommand(pointer, GetCommandLength(pointer));
       pointer += GetCommandLength(pointer);
     }
@@ -190,7 +189,7 @@ int GetCommandLength(void *commandBuffer)
     int commandCount = *(buffer + 1);
     int i;
     int length;
-    char *pointer = buffer + 2;
+    unsigned char *pointer = buffer + 2;
     /* adding up individual command lengths */
     for (i = 0; i < commandCount; ++i)
     {

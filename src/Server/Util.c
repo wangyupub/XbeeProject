@@ -10,14 +10,17 @@
 
 #include "Util.h"
 
+/* Log config file name */
+const char* LOG_CONFIG_FILENAME = "zlog.conf";
+
+/* INI file name */
+const char* INI_FILENAME = "config.ini";
 
 
 unsigned int htoi(const char *s)
 {
 	unsigned int n;
-	int r;
-
-	r = sscanf(s, "%x", &n);
+	sscanf(s, "%x", &n);
 	return n;
 }
 
@@ -68,16 +71,15 @@ int zLogInit()
 int zLogDestroy()
 {
   zlog_fini();
+
+  return 0;
 }
 
 int iniHandler(void* user, const char* section, const char* name, const char* value)
-{
-    int address;
-    long long longAddress;
-  
+{  
     AppConfig* pconfig = (AppConfig*) user;
 
-    #define MATCH(s, n) strcmp(section, s) == 0 && strcmp(name, n) == 0
+    #define MATCH(s, n) (strcmp(section, s) == 0 && strcmp(name, n)) == 0
     if (MATCH("SocketServer", "ServerPort"))
     {
       pconfig->uServerPort = atoi(value);
@@ -127,7 +129,7 @@ int iniHandler(void* user, const char* section, const char* name, const char* va
     else if (MATCH("RadioNetwork", "AddressHi") || MATCH("RadioNetwork", "AddressLo"))
     {
       /* copy the address into the pre-allocated buffer */
-      int* pointer = pconfig->radioNetworkConfig.addressBuffer;
+      uint32_t* pointer = pconfig->radioNetworkConfig.addressBuffer;
       if (pointer != NULL)
       {
 	int addressCount = 0;
