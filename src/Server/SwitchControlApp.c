@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <errno.h>
 
 #include "Util.h"
 #include "SocketServerControl.h"
@@ -126,11 +127,14 @@ int UpdateReturnData()
     if (gActiveSocketId != 0)
     {
       zlog_debug(gZlogCategories[ZLOG_MAIN], "Sending return data to sid [%d]", gActiveSocketId);
-      int err = SocketServerSend(gActiveSocketId, buffer, size);
-      zlog_debug(gZlogCategories[ZLOG_MAIN], "send error code [%d]", err);
-      if (err != size)
+      int ret = SocketServerSend(gActiveSocketId, buffer, size);
+      if (ret > 0)
       {
-	zlog_warn(gZlogCategories[ZLOG_MAIN], "return data sent unsuccessfully");
+	zlog_debug(gZlogCategories[ZLOG_MAIN], "[%d] bytes sent to sid [%d]", ret, gActiveSocketId);	
+      }
+      if (ret != size)
+      {
+	zlog_warn(gZlogCategories[ZLOG_MAIN], "return data sent unsuccessfully with errno [%d]", errno);
       }
     }
     /* leaving critical zone */

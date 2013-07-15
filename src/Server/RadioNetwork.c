@@ -216,6 +216,7 @@ int _ProcessCommand(RadioCommand* pCommand)
   if (ret == 0)
   {
     zlog_debug(gZlogCategories[ZLOG_COMMAND], "[%d] bytes data returned: %s", dataLen, (char*) buffer);
+    zlog_debug(gZlogCategories[ZLOG_COMMAND], "[%d] bytes data returned: %x", dataLen, ((char*) buffer)[0]);
     
     /* sets up the return data */
     _SetReturnData(pCommand, buffer, dataLen);
@@ -753,9 +754,11 @@ int RadioNetworkGetReturnData(void* buffer)
       {
 	/* gets the switch whose index is stored in customData */
 	int mask = 0x01 << command->customData;
-	char switchState = ((*((char*) command->toRet)) & mask != 0);
+	char switchState = (((*((char*) command->toRet)) & mask) != 0);
 	size = sizeof(char);	
 	memcpy(buffer, &switchState, size);
+	
+	zlog_debug(gZlogCategories[ZLOG_COMMAND], "CmdGetSingleSwitch return [%x & %x] = %x", mask, *((char*) command->toRet), switchState);
       }
       break;
       case CmdGetMultipleSwitches:
