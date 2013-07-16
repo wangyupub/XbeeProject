@@ -2,12 +2,9 @@ SHELL = /bin/sh
 
 .SUFFIXES:
 .SUFFIXES: .c .h .o
+.EXPORT_ALL_VARIABLES:
 
-#export PATH!=/home/dreamer/bin/4.4.3/bin:$(PATH)
-
-CC = gcc
-#CC = ~/bin/4.4.3/bin/arm-linux-gcc
-
+CFLAGS+=-Wall -lpthread -lrt -static
 
 LIBRARY_PATH_PREFIX = ../../lib
 
@@ -25,27 +22,35 @@ PROG = $(LIBRARY_PATH_PREFIX)/$(INIH)/ini.c SocketServerControl.c XBeeInterface.
 OUT = SwitchControlApp
 
 
-all: $(OUT)
-	
+ifeq ($(TARGET), arm)
+	CC := ~/bin/4.4.3/bin/arm-linux-gcc
+	CROSS_COMPILE?= arm-none-linux-gnueabi-
+	CFLAGS+=        -march=armv4t -mtune=arm920t
+	CLINKS+=        -march=armv4t -mtune=arm920t
+else
+	CC := gcc
+endif
 
+all: $(OUT)	
+	
 new:
 	clean all
 
 clean:
-	(rm -f $(OUT); cd $(LIBRARY_PATH_PREFIX)/$(ZLOG); $(MAKE) clean; cd $(LIBRARY_PATH_PREFIX)/$(XBEE); $(MAKE) clean)
+	($(RM) -f $(OUT); cd $(LIBRARY_PATH_PREFIX)/$(ZLOG); $(MAKE) clean; cd $(LIBRARY_PATH_PREFIX)/$(XBEE); $(MAKE) clean)
+	
 
 LIBZLOG:
-	(cd $(LIBRARY_PATH_PREFIX)/$(ZLOG); $(MAKE) CC=$(CC))
+	(cd $(LIBRARY_PATH_PREFIX)/$(ZLOG); $(MAKE))
 	
 # this is a temporary solution, libxbee has its own way of configuring platform
 # TODO: find a more conventional way to do this
 LIBXBEE:
-	(export PATH=/home/dreamer/bin/4.4.3/bin:$$PATH; cd $(LIBRARY_PATH_PREFIX)/$(XBEE); $(MAKE) configure; $(MAKE) CC=$(CC))
-
+	(export PATH=/home/dreamer/bin/4.4.3/bin:$$PATH; cd $(LIBRARY_PATH_PREFIX)/$(XBEE); $(MAKE) configure; $(MAKE))
 	
 $(INIH).o:
 	(cd $(LIBRARY_PATH_PREFIX)/$(INIH); $(CC) ini.c)
 
 $(OUT): $(PROG) LIBZLOG LIBXBEE
-	$(CC) $(filter %.c,$^) -o $(OUT) $(INCLUDE) $(LD_LIBRARY_PATH) -l$(ZLOG) -l$(XBEE) -lpthread -lrt -static
+	$(CC) $(filter %.c,$^) -o $(OUT) $(INCLUDE) $(LD_LIBRARY_PATH) -l$(ZLOG) -l$(XBEE) $(CFLAGS)
 
